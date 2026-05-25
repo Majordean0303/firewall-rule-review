@@ -85,6 +85,7 @@
         .nav-tabs { border-bottom: 2px solid var(--surface-border); }
         .nav-tabs .nav-link { color: var(--text-muted); border: none; padding: 12px 20px; font-weight: 500;}
         .nav-tabs .nav-link.active { background: transparent; border-bottom: 3px solid var(--accent-blue); color: var(--text-main); font-weight: 600;}
+        .nav-tabs .nav-item .badge { font-size: 0.7rem; transform: translateY(-1px); }
 
         /* DataTables Custom Overrides */
         table.dataTable { border-collapse: separate; border-spacing: 0 8px; margin-top: -8px !important; }
@@ -109,59 +110,95 @@
     <div class="container-fluid mb-5 px-4">
         
         <div class="d-flex justify-content-between align-items-center mb-4 pb-3">
-            <div>
-                <h3 class="fw-bold mb-1">Telemetry Dashboard</h3>
-                <div class="d-flex align-items-center text-muted" style="font-size: 0.85rem;">
-                    <i class="bi bi-hdd-network-fill me-2 text-accent"></i> TARGET NODE: <span class="fw-bold text-light ms-2">{{ site_name | upper }}</span>
+            <div class="d-flex align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-1">Telemetry Dashboard</h3>
+                    <div class="d-flex align-items-center text-muted" style="font-size: 0.85rem;">
+                        <i class="bi bi-hdd-network-fill me-2 text-accent"></i> TARGET NODE: <span class="fw-bold text-light ms-2">{{ site_name | upper }}</span>
+                    </div>
+                </div>
+                
+                {% set active_count = metrics.active_rules if metrics.active_rules > 0 else 1 %}
+                {% set health_score = ((metrics.low_risk / active_count) * 100) | int %}
+                
+                <div class="ms-5 ps-4 border-start border-secondary d-none d-md-flex align-items-center">
+                    <div class="me-3 text-end">
+                        <div class="text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 1px;">Overall Posture</div>
+                        <div class="fw-bold" style="font-size: 0.9rem;">
+                            {% if health_score >= 80 %} <span class="text-success-custom">Healthy</span>
+                            {% elif health_score >= 50 %} <span class="text-warning-custom">Needs Review</span>
+                            {% else %} <span class="text-danger-custom">Critical Risk</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5 shadow" 
+                         style="width: 55px; height: 55px; 
+                                border: 3px solid {% if health_score >= 80 %}var(--success-green){% elif health_score >= 50 %}var(--warn-yellow){% else %}var(--danger-red){% endif %};
+                                background-color: rgba(15, 23, 42, 0.5);">
+                        {{ health_score }}
+                    </div>
                 </div>
             </div>
+            
             <div>
                 <a href="/" class="btn btn-outline-secondary me-2 px-4"><i class="bi bi-arrow-left me-1"></i> New Scan</a>
                 <a href="download/{{ output_filename }}" class="btn btn-cyber px-4"><i class="bi bi-cloud-download me-2"></i> Export Report</a>
             </div>
         </div>
 
-        <ul class="nav nav-tabs mb-4" id="reviewTabs" role="tablist">
+        <ul class="nav nav-tabs mb-4 d-flex gap-1 align-items-end" id="reviewTabs" role="tablist">
             <li class="nav-item">
-                <button class="nav-link active" id="dashboard-tab" type="button" onclick="switchTab('dashboard')"><i class="bi bi-grid-1x2 me-2"></i>Executive Summary</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" id="high-risk-tab" type="button" onclick="switchTab('high-risk')">
-                    <span class="d-flex align-items-center"><span class="badge bg-danger rounded-pill me-2">{{ metrics.high_risk }}</span> High Risk</span>
+                <button class="nav-link active px-3 pb-2" id="dashboard-tab" type="button" onclick="switchTab('dashboard')">
+                    <i class="bi bi-grid-1x2 me-1"></i> Dashboard
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="zero-tab" type="button" onclick="switchTab('zero')">
-                    <span class="d-flex align-items-center"><span class="badge bg-warning text-dark rounded-pill me-2">{{ metrics.zero_hit_rules }}</span> Zero Hit</span>
+                <button class="nav-link px-3 pb-2" id="high-risk-tab" type="button" onclick="switchTab('high-risk')">
+                    <span class="text-danger-custom fw-bold"><i class="bi bi-shield-x me-1"></i>High Risk</span> 
+                    <span class="badge bg-danger rounded-pill ms-1">{{ metrics.high_risk }}</span>
                 </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="src-tab" type="button" onclick="switchTab('src')">Source Any</button>
+                <button class="nav-link px-3 pb-2" id="zero-tab" type="button" onclick="switchTab('zero')">
+                    <span class="text-warning-custom"><i class="bi bi-clock-history me-1"></i>Stale (0 Hit)</span>
+                    <span class="badge bg-warning text-dark rounded-pill ms-1">{{ metrics.zero_hit_rules }}</span>
+                </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="dst-tab" type="button" onclick="switchTab('dst')">Dest Any</button>
+                <button class="nav-link px-3 pb-2" id="src-tab" type="button" onclick="switchTab('src')">
+                    Src: ANY <span class="badge bg-secondary rounded-pill ms-1">{{ metrics.source_any }}</span>
+                </button>
             </li>
             <li class="nav-item">
-                <button class="nav-link" id="srv-tab" type="button" onclick="switchTab('srv')">Service Any</button>
+                <button class="nav-link px-3 pb-2" id="dst-tab" type="button" onclick="switchTab('dst')">
+                    Dst: ANY <span class="badge bg-secondary rounded-pill ms-1">{{ metrics.destination_any }}</span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link px-3 pb-2" id="srv-tab" type="button" onclick="switchTab('srv')">
+                    Svc: ANY <span class="badge bg-secondary rounded-pill ms-1">{{ metrics.service_any }}</span>
+                </button>
             </li>
             
             <li class="nav-item dropdown ms-auto">
-                <a class="nav-link dropdown-toggle text-muted border-0" id="more-views-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><i class="bi bi-three-dots"></i> More Views</a>
+                <a class="nav-link dropdown-toggle text-muted border-0 pb-2" id="more-views-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                    <i class="bi bi-funnel"></i> Filters
+                </a>
                 <ul class="dropdown-menu dropdown-menu-dark shadow" style="border: 1px solid var(--surface-border);">
                     <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Core Rulesets</h6></li>
-                    <li><a class="dropdown-item" id="total-tab" href="javascript:void(0);" onclick="switchTab('total')">Total Master Rules</a></li>
-                    <li><a class="dropdown-item" id="active-tab" href="javascript:void(0);" onclick="switchTab('active')">Active Rules</a></li>
-                    <li><a class="dropdown-item" id="active-hit-tab" href="javascript:void(0);" onclick="switchTab('active-hit')">Active Rules (With Hits)</a></li>
-                    <li><a class="dropdown-item" id="disabled-tab" href="javascript:void(0);" onclick="switchTab('disabled')">Disabled Rules</a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="total-tab" href="javascript:void(0);" onclick="switchTab('total')">Total Master <span class="text-muted ms-3">{{ metrics.total_rules }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="active-tab" href="javascript:void(0);" onclick="switchTab('active')">Active Rules <span class="text-muted ms-3">{{ metrics.active_rules }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="active-hit-tab" href="javascript:void(0);" onclick="switchTab('active-hit')">Active (With Hits) <span class="text-muted ms-3">{{ metrics.active_hit_rules }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="disabled-tab" href="javascript:void(0);" onclick="switchTab('disabled')">Disabled Rules <span class="text-muted ms-3">{{ metrics.disabled_rules }}</span></a></li>
                     <li><hr class="dropdown-divider border-secondary"></li>
                     <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Risk Categories</h6></li>
-                    <li><a class="dropdown-item" id="med-risk-tab" href="javascript:void(0);" onclick="switchTab('med-risk')">Medium Risk Rules</a></li>
-                    <li><a class="dropdown-item" id="low-risk-tab" href="javascript:void(0);" onclick="switchTab('low-risk')">Low Risk Rules</a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="med-risk-tab" href="javascript:void(0);" onclick="switchTab('med-risk')">Medium Risk <span class="text-muted ms-3">{{ metrics.medium_risk }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="low-risk-tab" href="javascript:void(0);" onclick="switchTab('low-risk')">Low Risk <span class="text-muted ms-3">{{ metrics.low_risk }}</span></a></li>
                     <li><hr class="dropdown-divider border-secondary"></li>
-                    <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Configuration Flaws</h6></li>
-                    <li><a class="dropdown-item" id="profile-tab" href="javascript:void(0);" onclick="switchTab('profile')">Security Profile Issues</a></li>
-                    <li><a class="dropdown-item" id="logs-tab" href="javascript:void(0);" onclick="switchTab('logs')">Logging Issues</a></li>
-                    <li><a class="dropdown-item" id="tags-tab" href="javascript:void(0);" onclick="switchTab('tags')">Tagging Issues</a></li>
+                    <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Config Flaws</h6></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="profile-tab" href="javascript:void(0);" onclick="switchTab('profile')">Profile Issues <span class="text-muted ms-3">{{ metrics.profile_issue }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="logs-tab" href="javascript:void(0);" onclick="switchTab('logs')">Logging Issues <span class="text-muted ms-3">{{ metrics.logs_none }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="tags-tab" href="javascript:void(0);" onclick="switchTab('tags')">Tagging Issues <span class="text-muted ms-3">{{ metrics.tags_none }}</span></a></li>
                 </ul>
             </li>
         </ul>
@@ -218,18 +255,13 @@
                                     </tr>
             
                                     <tr class="dashboard-header-row">
-                                        <th>Active Rules</th><th>Zero Hit Review</th><th>Active Hit Rules</th>
+                                        <th>Active Rules</th><th>Stale Review (0 Hit)</th><th>Active Hit Rules</th>
                                     </tr>
                                     <tr>
                                         <td><span class="clickable-metric" onclick="switchTab('active')">{{ metrics.active_rules }}</span></td>
                                         <td><span class="clickable-metric text-warning-custom" onclick="switchTab('zero')">{{ metrics.zero_hit_rules }}</span></td>
                                         <td><span class="clickable-metric text-accent" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
                                     </tr>
-            
-                                    {% set active_hit = metrics.active_hit_rules if metrics.active_hit_rules > 0 else 1 %}
-                                    {% set src_pct = ((metrics.source_any / active_hit) * 100) | int %}
-                                    {% set dst_pct = ((metrics.destination_any / active_hit) * 100) | int %}
-                                    {% set srv_pct = ((metrics.service_any / active_hit) * 100) | int %}
             
                                     <tr class="dashboard-header-row">
                                         <th>Active Hit Rules</th><th>Source Any / All</th><th>Requires Review</th>
@@ -239,7 +271,6 @@
                                         <td><span class="clickable-metric" onclick="switchTab('src')">{{ metrics.source_any }}</span></td>
                                         <td class="px-5">
                                             <span class="clickable-metric text-danger-custom" onclick="switchTab('src')">{{ metrics.source_any }}</span>
-                                            <div class="progress progress-slim"><div class="progress-bar bg-danger-custom" style="width: {{ src_pct ~ '%' }};"></div></div>
                                         </td>
                                     </tr>
             
@@ -251,7 +282,6 @@
                                         <td><span class="clickable-metric" onclick="switchTab('dst')">{{ metrics.destination_any }}</span></td>
                                         <td class="px-5">
                                             <span class="clickable-metric text-danger-custom" onclick="switchTab('dst')">{{ metrics.destination_any }}</span>
-                                            <div class="progress progress-slim"><div class="progress-bar bg-danger-custom" style="width: {{ dst_pct ~ '%' }};"></div></div>
                                         </td>
                                     </tr>
             
@@ -263,7 +293,6 @@
                                         <td><span class="clickable-metric" onclick="switchTab('srv')">{{ metrics.service_any }}</span></td>
                                         <td class="px-5">
                                             <span class="clickable-metric text-danger-custom" onclick="switchTab('srv')">{{ metrics.service_any }}</span>
-                                            <div class="progress progress-slim"><div class="progress-bar bg-danger-custom" style="width: {{ srv_pct ~ '%' }};"></div></div>
                                         </td>
                                     </tr>
             
@@ -341,7 +370,6 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Modernize DataTables DOM elements
             $.extend( true, $.fn.dataTable.defaults, {
                 "language": {
                     "search": "<i class='bi bi-search text-muted me-2'></i>",
@@ -359,33 +387,24 @@
                        "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
             });
 
-            // Clean Input Styling for Search Bar
             $('.dataTables_filter input').addClass('form-control form-control-sm d-inline-block w-auto').css('background-color', 'rgba(15, 23, 42, 0.6)');
             $('.dataTables_length select').addClass('form-select form-select-sm d-inline-block w-auto').css('background-color', 'rgba(15, 23, 42, 0.6)');
         });
 
-        // PURE, CUSTOM JAVASCRIPT TAB LOGIC (Immune to Bootstrap Conflicts)
         function switchTab(tabId) {
-            // 1. Hide all tab content panes
             $('.tab-pane').removeClass('show active');
-            
-            // 2. Show the targeted tab pane
             $('#' + tabId).addClass('show active');
 
-            // 3. De-highlight all navigation links
             $('.nav-link').removeClass('active');
             $('.dropdown-item').removeClass('active');
 
-            // 4. Highlight the newly selected link
             var targetTrigger = $('#' + tabId + '-tab');
             targetTrigger.addClass('active');
 
-            // 5. Highlight dropdown parent if target is inside the dropdown
             if (targetTrigger.hasClass('dropdown-item')) {
                 $('#more-views-toggle').addClass('active');
             }
 
-            // 6. FORCE CLOSE Bootstrap dropdown natively without stripping CSS
             var dropdownElement = document.getElementById('more-views-toggle');
             if (dropdownElement) {
                 var dropdownInstance = bootstrap.Dropdown.getInstance(dropdownElement);
@@ -394,10 +413,8 @@
                 }
             }
 
-            // 7. Adjust DataTables Column widths for newly visible table
             $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
 
-            // 8. Smooth scroll up to the tabs
             document.getElementById('reviewTabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     </script>

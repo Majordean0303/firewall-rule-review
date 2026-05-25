@@ -8,24 +8,22 @@ from werkzeug.utils import secure_filename
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 app = Flask(__name__)
-@app.route('/api/system/restart', methods=['POST'])
-def system_restart():
-    # Security: Only allow the server itself to trigger a restart
-    if request.remote_addr != '127.0.0.1':
-        return "Unauthorized", 403
-    
-    def kill_app():
-        time.sleep(1)
-        os._exit(0) # Kills the process so NSSM can instantly reboot it
-    
-    threading.Thread(target=kill_app).start()
-    return "Application is restarting to apply new code...", 200
 app.secret_key = 'secure_key_for_flash_messages'
 
 UPLOAD_FOLDER = 'temp_uploads'
 OUTPUT_FOLDER = 'temp_outputs'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+@app.route('/api/system/restart', methods=['POST'])
+def system_restart():
+    if request.remote_addr != '127.0.0.1':
+        return "Unauthorized", 403
+    def kill_app():
+        time.sleep(1)
+        os._exit(0)
+    threading.Thread(target=kill_app).start()
+    return "Application is restarting to apply new code...", 200
 
 # -------------------------------------------------------------------
 # ENGINE 1: PALO ALTO PROCESSOR
@@ -86,12 +84,22 @@ def process_palo_alto_rules(df, output_path, site_name):
     web_cols = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action']
     web_cols = [col for col in web_cols if col in df.columns] 
     
+    # NEW: Expanded web_data to include all dashboard metrics
     web_data = {
+        'total': df[web_cols].to_dict('records'),
+        'disabled': disabled_df[web_cols].to_dict('records'),
+        'active': active_df[web_cols].to_dict('records'),
         'high_risk': active_df[high_mask][web_cols].to_dict('records'),
+        'med_risk': active_df[med_mask][web_cols].to_dict('records'),
+        'low_risk': active_df[low_mask][web_cols].to_dict('records'),
+        'zero_hit': zero_hit_df[web_cols].to_dict('records'),
+        'active_hit': active_hit_df[web_cols].to_dict('records'),
         'source_any': source_any_df[web_cols].to_dict('records'),
         'dest_any': dest_any_df[web_cols].to_dict('records'),
         'service_any': service_any_df[web_cols].to_dict('records'),
-        'zero_hit': zero_hit_df[web_cols].to_dict('records')
+        'profile_issue': profile_none_df[web_cols].to_dict('records'),
+        'logs_none': logs_none_df[web_cols].to_dict('records'),
+        'tags_none': tags_none_df[web_cols].to_dict('records')
     }
     return metrics, web_data
 
@@ -114,7 +122,6 @@ def process_fortinet_rules(df, output_path, site_name):
         ((active_hit_df['Security Profiles'] == '') | (active_hit_df['Security Profiles'].astype(str).str.contains('no-inspection', case=False)))
     ]
     
-    # MODIFIED: Treat 'UTM' as disabled/insufficient logging along with blank or 'disabled'
     logs_none_df = active_hit_df[
         (active_hit_df['Log'] == '') | 
         (active_hit_df['Log'].astype(str).str.strip().str.lower() == 'disabled') |
@@ -130,7 +137,6 @@ def process_fortinet_rules(df, output_path, site_name):
     is_prof_none = is_accept & ((active_df['Security Profiles'] == '') | (active_df['Security Profiles'].astype(str).str.contains('no-inspection', case=False)))
     is_zero_hit = (active_df['Hit Count'] == 0) | (active_df['Hit Count'].astype(str).str.strip() == '0')
     
-    # MODIFIED: Treat 'UTM' as disabled/insufficient logging for the overall risk mask calculation
     is_log_disabled = (
         (active_df['Log'] == '') | 
         (active_df['Log'].astype(str).str.strip().str.lower() == 'disabled') |
@@ -164,12 +170,22 @@ def process_fortinet_rules(df, output_path, site_name):
     
     web_cols = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action']
     
+    # NEW: Expanded web_data to include all dashboard metrics
     web_data = {
+        'total': web_df[web_cols].to_dict('records'),
+        'disabled': web_df.loc[disabled_df.index][web_cols].to_dict('records'),
+        'active': web_df.loc[active_df.index][web_cols].to_dict('records'),
         'high_risk': web_df.loc[active_df[high_mask].index][web_cols].to_dict('records'),
+        'med_risk': web_df.loc[active_df[med_mask].index][web_cols].to_dict('records'),
+        'low_risk': web_df.loc[active_df[low_mask].index][web_cols].to_dict('records'),
+        'zero_hit': web_df.loc[zero_hit_df.index][web_cols].to_dict('records'),
+        'active_hit': web_df.loc[active_hit_df.index][web_cols].to_dict('records'),
         'source_any': web_df.loc[source_any_df.index][web_cols].to_dict('records'),
         'dest_any': web_df.loc[dest_any_df.index][web_cols].to_dict('records'),
         'service_any': web_df.loc[service_any_df.index][web_cols].to_dict('records'),
-        'zero_hit': web_df.loc[zero_hit_df.index][web_cols].to_dict('records')
+        'profile_issue': web_df.loc[profile_none_df.index][web_cols].to_dict('records'),
+        'logs_none': web_df.loc[logs_none_df.index][web_cols].to_dict('records'),
+        'tags_none': web_df.loc[tags_none_df.index][web_cols].to_dict('records')
     }
     return metrics, web_data
 
@@ -242,11 +258,9 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
 def index():
     if request.method == 'POST':
         site_name = request.form.get('site_name', 'UNSPECIFIED TARGET').strip()
-        
         if 'file' not in request.files:
             flash('No file uploaded.')
             return redirect(request.url)
-        
         file = request.files['file']
         if file.filename == '':
             flash('No selected file.')
@@ -262,11 +276,9 @@ def index():
             output_path = os.path.join(OUTPUT_FOLDER, output_filename)
             
             try:
-                # 1. Load File
                 df = pd.read_csv(upload_path) if upload_path.endswith('.csv') else pd.read_excel(upload_path)
                 df = df.fillna('')
                 
-                # 2. Auto-Detect Firewall Vendor Based on Header Signatures
                 if 'Source Zone' in df.columns or 'Rule Usage Hit Count' in df.columns or 'Rule Usage Rule Usage' in df.columns:
                     metrics, web_data = process_palo_alto_rules(df, output_path, site_name)
                 elif 'Policy' in df.columns or 'Hit Count' in df.columns and 'Action' in df.columns:
@@ -288,4 +300,4 @@ def download_file(filename):
     return send_file(file_path, as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, port=5000)

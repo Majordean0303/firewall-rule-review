@@ -3,125 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unified Firewall Review - {{ site_name }}</title>
+    <title>Telemetry Review - {{ site_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', system-ui, sans-serif; }
-        .tech-card { background-color: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
-        .table-custom { background-color: #21262d !important; color: #8b949e !important; border-top: 2px solid #30363d; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;}
-        .table td, .table th { border-color: #30363d; vertical-align: middle; }
-        .metric-value { font-family: 'Courier New', Courier, monospace; font-size: 1.2rem; font-weight: bold; }
-        .text-danger-custom { color: #f85149 !important; font-size: 1.3rem; }
-        .text-warning-custom { color: #d29922 !important; }
-        .text-success-custom { color: #3fb950 !important; }
-        .btn-cyber { background-color: #238636; color: white; border: none; }
-        .btn-cyber:hover { background-color: #2ea043; color: white; }
-        .progress-slim { height: 6px; background-color: #30363d; margin-top: 5px; }
-        .bg-danger-custom { background-color: #f85149 !important; }
+        :root {
+            --bg-dark: #0f172a;
+            --surface-dark: #1e293b;
+            --surface-border: #334155;
+            --accent-blue: #38bdf8;
+            --danger-red: #ef4444;
+            --warn-yellow: #f59e0b;
+            --success-green: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body { 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif; 
+            padding-top: 1rem;
+        }
+
+        /* Glass / Surface Cards */
+        .tech-card { 
+            background-color: var(--surface-dark); 
+            border: 1px solid var(--surface-border); 
+            border-radius: 12px; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
         
-        .page-link { background-color: #21262d; border-color: #30363d; color: #c9d1d9; }
-        .page-link:hover { background-color: #30363d; color: #fff; }
-        .page-item.active .page-link { background-color: #238636; border-color: #238636; }
-        div.dataTables_wrapper div.dataTables_filter input { background-color: #0d1117; color: #fff; border: 1px solid #30363d; }
-        div.dataTables_wrapper div.dataTables_length select { background-color: #0d1117; color: #fff; border: 1px solid #30363d; }
-        table.dataTable>tbody>tr { background-color: #161b22; }
-        table.dataTable>tbody>tr:hover { background-color: #21262d; }
+        .metric-card { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border-radius: 12px; }
+        .metric-card:hover { transform: translateY(-4px); }
+        .metric-card.danger { background: linear-gradient(180deg, rgba(239, 68, 68, 0.1) 0%, var(--surface-dark) 100%); border-color: rgba(239, 68, 68, 0.3); }
+        .metric-card.warning { background: linear-gradient(180deg, rgba(245, 158, 11, 0.1) 0%, var(--surface-dark) 100%); border-color: rgba(245, 158, 11, 0.3); }
+        .metric-card.success { background: linear-gradient(180deg, rgba(16, 185, 129, 0.1) 0%, var(--surface-dark) 100%); border-color: rgba(16, 185, 129, 0.3); }
+
+        /* Typography */
+        .text-accent { color: var(--accent-blue) !important; }
+        .text-danger-custom { color: var(--danger-red) !important; }
+        .text-warning-custom { color: var(--warn-yellow) !important; }
+        .text-success-custom { color: var(--success-green) !important; }
+        .metric-value-large { font-size: 3.5rem; font-weight: 700; line-height: 1; letter-spacing: -2px; }
+
+        /* Dashboard Table Styling */
+        .dashboard-table td, .dashboard-table th { border-color: var(--surface-border); vertical-align: middle; padding: 1rem; }
+        .dashboard-header-row th { background-color: rgba(15, 23, 42, 0.5); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-top: 1px solid var(--surface-border);}
+        
+        .clickable-metric { 
+            cursor: pointer; 
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            transition: all 0.2s ease; 
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid transparent;
+        }
+        .clickable-metric:hover { 
+            background-color: rgba(56, 189, 248, 0.1); 
+            border-color: rgba(56, 189, 248, 0.3);
+            color: var(--accent-blue) !important;
+            transform: scale(1.05); 
+        }
+
+        .progress-slim { height: 4px; background-color: var(--bg-dark); border-radius: 4px; overflow: hidden; margin-top: 8px;}
+        .bg-danger-custom { background-color: var(--danger-red) !important; }
+
+        /* Buttons & Navigation Tabs */
+        .btn-cyber { background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600;}
+        .btn-cyber:hover { background-color: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);}
+        
+        .nav-tabs { border-bottom: 2px solid var(--surface-border); }
+        .nav-tabs .nav-link { color: var(--text-muted); border: none; padding: 12px 20px; font-weight: 500;}
+        .nav-tabs .nav-link.active { background: transparent; border-bottom: 3px solid var(--accent-blue); color: var(--text-main); font-weight: 600;}
+
+        /* DataTables Custom Overrides */
+        table.dataTable { border-collapse: separate; border-spacing: 0 8px; margin-top: -8px !important; }
+        table.dataTable>thead>tr>th { border-bottom: none; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 4px;}
+        table.dataTable>tbody>tr { background-color: rgba(15, 23, 42, 0.4); transition: background-color 0.2s;}
+        table.dataTable>tbody>tr>td { border-top: 1px solid var(--surface-border); border-bottom: 1px solid var(--surface-border); padding: 12px 16px; font-size: 0.9rem;}
+        table.dataTable>tbody>tr>td:first-child { border-left: 1px solid var(--surface-border); border-top-left-radius: 8px; border-bottom-left-radius: 8px; font-weight: 600; color: var(--text-main);}
+        table.dataTable>tbody>tr>td:last-child { border-right: 1px solid var(--surface-border); border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+        table.dataTable>tbody>tr:hover { background-color: rgba(56, 189, 248, 0.05); }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button { border-radius: 6px !important; border: 1px solid var(--surface-border) !important; background: var(--surface-dark) !important; color: var(--text-main) !important; margin: 0 4px;}
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--accent-blue) !important; color: #000 !important; border-color: var(--accent-blue) !important;}
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px;}
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--surface-border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
 <body>
-    <div class="container-fluid mt-4 mb-5 px-4">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
-            <h2 class="fw-bold mb-0" style="color: #58a6ff;">Unified Policy Telemetry</h2>
+    <div class="container-fluid mb-5 px-4">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3">
             <div>
-                <a href="/" class="btn btn-outline-secondary me-2">New Scan</a>
-                <a href="{{ url_for('download_file', filename=output_filename) }}" class="btn btn-cyber fw-bold"><i class="bi bi-file-earmark-excel"></i> Export .XLSX Workbook</a>
+                <h3 class="fw-bold mb-1">Telemetry Dashboard</h3>
+                <div class="d-flex align-items-center text-muted" style="font-size: 0.85rem;">
+                    <i class="bi bi-hdd-network-fill me-2 text-accent"></i> TARGET NODE: <span class="fw-bold text-light ms-2">{{ site_name | upper }}</span>
+                </div>
+            </div>
+            <div>
+                <a href="/" class="btn btn-outline-secondary me-2 px-4"><i class="bi bi-arrow-left me-1"></i> New Scan</a>
+                <a href="download/{{ output_filename }}" class="btn btn-cyber px-4"><i class="bi bi-cloud-download me-2"></i> Export Report</a>
             </div>
         </div>
 
-        <ul class="nav nav-tabs mb-4 border-secondary" id="reviewTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active text-light" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">Executive Summary</button>
+        <ul class="nav nav-tabs mb-4" id="reviewTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="dashboard-tab" type="button" onclick="switchTab('dashboard')"><i class="bi bi-grid-1x2 me-2"></i>Executive Summary</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-danger-custom fs-6 fw-bold" id="high-risk-tab" data-bs-toggle="tab" data-bs-target="#high-risk" type="button" role="tab">High Risk ({{ metrics.high_risk }})</button>
+            <li class="nav-item">
+                <button class="nav-link" id="high-risk-tab" type="button" onclick="switchTab('high-risk')">
+                    <span class="d-flex align-items-center"><span class="badge bg-danger rounded-pill me-2">{{ metrics.high_risk }}</span> High Risk</span>
+                </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-warning-custom" id="zero-tab" data-bs-toggle="tab" data-bs-target="#zero" type="button" role="tab">Zero Hit ({{ metrics.zero_hit_rules }})</button>
+            <li class="nav-item">
+                <button class="nav-link" id="zero-tab" type="button" onclick="switchTab('zero')">
+                    <span class="d-flex align-items-center"><span class="badge bg-warning text-dark rounded-pill me-2">{{ metrics.zero_hit_rules }}</span> Zero Hit</span>
+                </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-light fs-6" id="src-tab" data-bs-toggle="tab" data-bs-target="#src" type="button" role="tab">Source Any / All ({{ metrics.source_any }})</button>
+            <li class="nav-item">
+                <button class="nav-link" id="src-tab" type="button" onclick="switchTab('src')">Source Any</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-light fs-6" id="dst-tab" data-bs-toggle="tab" data-bs-target="#dst" type="button" role="tab">Dest Any / All ({{ metrics.destination_any }})</button>
+            <li class="nav-item">
+                <button class="nav-link" id="dst-tab" type="button" onclick="switchTab('dst')">Dest Any</button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link text-light fs-6" id="srv-tab" data-bs-toggle="tab" data-bs-target="#srv" type="button" role="tab">Service Any / All ({{ metrics.service_any }})</button>
+            <li class="nav-item">
+                <button class="nav-link" id="srv-tab" type="button" onclick="switchTab('srv')">Service Any</button>
+            </li>
+            
+            <li class="nav-item dropdown ms-auto">
+                <a class="nav-link dropdown-toggle text-muted border-0" id="more-views-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false"><i class="bi bi-three-dots"></i> More Views</a>
+                <ul class="dropdown-menu dropdown-menu-dark shadow" style="border: 1px solid var(--surface-border);">
+                    <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Core Rulesets</h6></li>
+                    <li><a class="dropdown-item" id="total-tab" href="javascript:void(0);" onclick="switchTab('total')">Total Master Rules</a></li>
+                    <li><a class="dropdown-item" id="active-tab" href="javascript:void(0);" onclick="switchTab('active')">Active Rules</a></li>
+                    <li><a class="dropdown-item" id="active-hit-tab" href="javascript:void(0);" onclick="switchTab('active-hit')">Active Rules (With Hits)</a></li>
+                    <li><a class="dropdown-item" id="disabled-tab" href="javascript:void(0);" onclick="switchTab('disabled')">Disabled Rules</a></li>
+                    <li><hr class="dropdown-divider border-secondary"></li>
+                    <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Risk Categories</h6></li>
+                    <li><a class="dropdown-item" id="med-risk-tab" href="javascript:void(0);" onclick="switchTab('med-risk')">Medium Risk Rules</a></li>
+                    <li><a class="dropdown-item" id="low-risk-tab" href="javascript:void(0);" onclick="switchTab('low-risk')">Low Risk Rules</a></li>
+                    <li><hr class="dropdown-divider border-secondary"></li>
+                    <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Configuration Flaws</h6></li>
+                    <li><a class="dropdown-item" id="profile-tab" href="javascript:void(0);" onclick="switchTab('profile')">Security Profile Issues</a></li>
+                    <li><a class="dropdown-item" id="logs-tab" href="javascript:void(0);" onclick="switchTab('logs')">Logging Issues</a></li>
+                    <li><a class="dropdown-item" id="tags-tab" href="javascript:void(0);" onclick="switchTab('tags')">Tagging Issues</a></li>
+                </ul>
             </li>
         </ul>
 
         <div class="tab-content" id="reviewTabsContent">
             
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
-                <div class="mx-auto" style="max-width: 900px;">
+                <div class="mx-auto" style="max-width: 950px;">
                     
-                    <div class="row mb-4">
+                    <div class="row g-4 mb-4">
                         <div class="col-md-4">
-                            <div class="card tech-card border border-danger shadow" style="cursor: pointer;" onclick="document.getElementById('high-risk-tab').click();">
-                                <div class="card-body text-center py-4">
-                                    <h6 class="text-danger-custom text-uppercase fw-bold mb-3">High Risk</h6>
-                                    <h1 class="metric-value text-white mb-2" style="font-size: 3rem;">{{ metrics.high_risk }}</h1>
-                                    <small class="text-muted d-block">ANY/ALL Access | No Security Profiles</small>
+                            <div class="tech-card metric-card danger p-4 h-100" onclick="switchTab('high-risk')">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="text-danger-custom text-uppercase fw-bold m-0">High Risk</h6>
+                                    <i class="bi bi-shield-x fs-4 text-danger-custom opacity-75"></i>
                                 </div>
+                                <h1 class="metric-value-large mb-3">{{ metrics.high_risk }}</h1>
+                                <p class="text-muted small m-0 lh-sm">Rules allowing ANY/ALL access or missing Threat Profiles.</p>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card tech-card border border-warning shadow">
-                                <div class="card-body text-center py-4">
-                                    <h6 class="text-warning-custom text-uppercase fw-bold mb-3">Medium Risk</h6>
-                                    <h1 class="metric-value text-white mb-2" style="font-size: 3rem;">{{ metrics.medium_risk }}</h1>
-                                    <small class="text-muted d-block">Zero Hit | Logs Disabled | Missing Tags</small>
+                            <div class="tech-card metric-card warning p-4 h-100" onclick="switchTab('med-risk')">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="text-warning-custom text-uppercase fw-bold m-0">Medium Risk</h6>
+                                    <i class="bi bi-shield-exclamation fs-4 text-warning-custom opacity-75"></i>
                                 </div>
+                                <h1 class="metric-value-large mb-3">{{ metrics.medium_risk }}</h1>
+                                <p class="text-muted small m-0 lh-sm">Zero Hit rules or inadequate logging/tagging visibility.</p>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card tech-card border border-success shadow">
-                                <div class="card-body text-center py-4">
-                                    <h6 class="text-success-custom text-uppercase fw-bold mb-3">Low Risk</h6>
-                                    <h1 class="metric-value text-white mb-2" style="font-size: 3rem;">{{ metrics.low_risk }}</h1>
-                                    <small class="text-muted d-block">Targeted & Monitored Active Rules</small>
+                            <div class="tech-card metric-card success p-4 h-100" onclick="switchTab('low-risk')">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="text-success-custom text-uppercase fw-bold m-0">Low Risk</h6>
+                                    <i class="bi bi-shield-check fs-4 text-success-custom opacity-75"></i>
                                 </div>
+                                <h1 class="metric-value-large mb-3">{{ metrics.low_risk }}</h1>
+                                <p class="text-muted small m-0 lh-sm">Healthy, targeted, and actively monitored rules.</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card tech-card shadow-lg">
-                        <div class="card-body p-0">
-                            <table class="table table-dark table-borderless mb-0 text-center">
+                    <div class="tech-card overflow-hidden">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-borderless dashboard-table mb-0 text-center align-middle">
                                 <tbody>
-                                    <tr style="background-color: #1f2428;">
-                                        <td colspan="3" class="text-start fs-5 fw-bold p-3 border-bottom border-secondary" style="color: #7ee787;">
-                                            <i class="bi bi-hdd-network"></i> TARGET NODE: {{ site_name | upper }}
-                                        </td>
-                                    </tr>
-                                    
-                                    <tr class="table-custom">
-                                        <th>Total Rules</th><th>Disabled Rules</th><th>Active Rules</th>
+                                    <tr class="dashboard-header-row">
+                                        <th style="width: 33%">Total Rules</th><th style="width: 33%">Disabled Rules</th><th style="width: 33%">Active Rules</th>
                                     </tr>
                                     <tr>
-                                        <td class="metric-value">{{ metrics.total_rules }}</td>
-                                        <td class="metric-value">{{ metrics.disabled_rules }}</td>
-                                        <td class="metric-value text-white">{{ metrics.active_rules }}</td>
+                                        <td><span class="clickable-metric" onclick="switchTab('total')">{{ metrics.total_rules }}</span></td>
+                                        <td><span class="clickable-metric" onclick="switchTab('disabled')">{{ metrics.disabled_rules }}</span></td>
+                                        <td><span class="clickable-metric text-accent" onclick="switchTab('active')">{{ metrics.active_rules }}</span></td>
                                     </tr>
             
-                                    <tr class="table-custom">
+                                    <tr class="dashboard-header-row">
                                         <th>Active Rules</th><th>Zero Hit Review</th><th>Active Hit Rules</th>
                                     </tr>
                                     <tr>
-                                        <td class="metric-value">{{ metrics.active_rules }}</td>
-                                        <td class="metric-value text-warning-custom">{{ metrics.zero_hit_rules }}</td>
-                                        <td class="metric-value text-white">{{ metrics.active_hit_rules }}</td>
+                                        <td><span class="clickable-metric" onclick="switchTab('active')">{{ metrics.active_rules }}</span></td>
+                                        <td><span class="clickable-metric text-warning-custom" onclick="switchTab('zero')">{{ metrics.zero_hit_rules }}</span></td>
+                                        <td><span class="clickable-metric text-accent" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
                                     </tr>
             
                                     {% set active_hit = metrics.active_hit_rules if metrics.active_hit_rules > 0 else 1 %}
@@ -129,67 +231,49 @@
                                     {% set dst_pct = ((metrics.destination_any / active_hit) * 100) | int %}
                                     {% set srv_pct = ((metrics.service_any / active_hit) * 100) | int %}
             
-                                    <tr class="table-custom">
-                                        <th>Active Hit Rules</th><th>Source Any / All</th><th>To be reviewed</th>
+                                    <tr class="dashboard-header-row">
+                                        <th>Active Hit Rules</th><th>Source Any / All</th><th>Requires Review</th>
                                     </tr>
                                     <tr>
-                                        <td class="metric-value">{{ metrics.active_hit_rules }}</td>
-                                        <td class="metric-value">{{ metrics.source_any }}</td>
-                                        <td>
-                                            <div class="metric-value text-danger-custom">{{ metrics.source_any }}</div>
-                                            <div class="progress progress-slim w-50 mx-auto"><div class="progress-bar bg-danger-custom" style="width: {{ src_pct ~ '%' }};"></div></div>
+                                        <td><span class="clickable-metric" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
+                                        <td><span class="clickable-metric" onclick="switchTab('src')">{{ metrics.source_any }}</span></td>
+                                        <td class="px-5">
+                                            <span class="clickable-metric text-danger-custom" onclick="switchTab('src')">{{ metrics.source_any }}</span>
+                                            <div class="progress progress-slim"><div class="progress-bar bg-danger-custom" style="width: {{ src_pct ~ '%' }};"></div></div>
                                         </td>
                                     </tr>
             
-                                    <tr class="table-custom">
-                                        <th>Active Hit Rules</th><th>Destination Any / All</th><th>To be reviewed</th>
+                                    <tr class="dashboard-header-row">
+                                        <th>Active Hit Rules</th><th>Destination Any / All</th><th>Requires Review</th>
                                     </tr>
                                     <tr>
-                                        <td class="metric-value">{{ metrics.active_hit_rules }}</td>
-                                        <td class="metric-value">{{ metrics.destination_any }}</td>
-                                        <td>
-                                            <div class="metric-value text-danger-custom">{{ metrics.destination_any }}</div>
-                                            <div class="progress progress-slim w-50 mx-auto"><div class="progress-bar bg-danger-custom" style="width: {{ dst_pct ~ '%' }};"></div></div>
+                                        <td><span class="clickable-metric" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
+                                        <td><span class="clickable-metric" onclick="switchTab('dst')">{{ metrics.destination_any }}</span></td>
+                                        <td class="px-5">
+                                            <span class="clickable-metric text-danger-custom" onclick="switchTab('dst')">{{ metrics.destination_any }}</span>
+                                            <div class="progress progress-slim"><div class="progress-bar bg-danger-custom" style="width: {{ dst_pct ~ '%' }};"></div></div>
                                         </td>
                                     </tr>
             
-                                    <tr class="table-custom">
-                                        <th>Active Hit Rules</th><th>Service Any / All</th><th>To be reviewed</th>
+                                    <tr class="dashboard-header-row">
+                                        <th>Active Hit Rules</th><th>Service Any / All</th><th>Requires Review</th>
                                     </tr>
                                     <tr>
-                                        <td class="metric-value">{{ metrics.active_hit_rules }}</td>
-                                        <td class="metric-value">{{ metrics.service_any }}</td>
-                                        <td>
-                                            <div class="metric-value text-danger-custom">{{ metrics.service_any }}</div>
-                                            <div class="progress progress-slim w-50 mx-auto"><div class="progress-bar bg-danger-custom" style="width: {{ srv_pct ~ '%' }};"></div></div>
+                                        <td><span class="clickable-metric" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
+                                        <td><span class="clickable-metric" onclick="switchTab('srv')">{{ metrics.service_any }}</span></td>
+                                        <td class="px-5">
+                                            <span class="clickable-metric text-danger-custom" onclick="switchTab('srv')">{{ metrics.service_any }}</span>
+                                            <div class="progress progress-slim"><div class="progress-bar bg-danger-custom" style="width: {{ srv_pct ~ '%' }};"></div></div>
                                         </td>
                                     </tr>
             
-                                    <tr class="table-custom">
-                                        <th>Active Hit Rules</th><th>Security Profile Issue</th><th></th>
-                                    </tr>
-                                    <tr>
-                                        <td class="metric-value">{{ metrics.active_hit_rules }}</td>
-                                        <td class="metric-value text-warning-custom">{{ metrics.profile_issue }}</td>
-                                        <td></td>
-                                    </tr>
-            
-                                    <tr class="table-custom">
-                                        <th>Active Hit Rules</th><th>Logging Issue</th><th></th>
-                                    </tr>
-                                    <tr>
-                                        <td class="metric-value">{{ metrics.active_hit_rules }}</td>
-                                        <td class="metric-value text-warning-custom">{{ metrics.logs_none }}</td>
-                                        <td></td>
-                                    </tr>
-            
-                                    <tr class="table-custom">
-                                        <th>Active Hit Rules</th><th>Tagging Issue</th><th></th>
+                                    <tr class="dashboard-header-row">
+                                        <th>Active Hit Rules</th><th>Security Profile Issue</th><th>Logging Issue</th>
                                     </tr>
                                     <tr class="pb-3">
-                                        <td class="metric-value pb-4">{{ metrics.active_hit_rules }}</td>
-                                        <td class="metric-value text-warning-custom pb-4">{{ metrics.tags_none }}</td>
-                                        <td class="pb-4"></td>
+                                        <td class="pb-4"><span class="clickable-metric" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
+                                        <td class="pb-4"><span class="clickable-metric text-warning-custom" onclick="switchTab('profile')">{{ metrics.profile_issue }}</span></td>
+                                        <td class="pb-4"><span class="clickable-metric text-warning-custom" onclick="switchTab('logs')">{{ metrics.logs_none }}</span></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -198,108 +282,55 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="high-risk" role="tabpanel">
-                <div class="card tech-card p-3 border-danger">
-                    <div class="alert bg-danger-custom text-white mb-3 fw-bold border-0">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i> ACTION REQUIRED: Showing overly permissive Active Rules (Source/Dest/Service as ANY or ALL) or rules lacking Threat Profiles.
-                    </div>
-                    <table class="table table-dark table-hover data-table w-100">
+            {% macro render_rule_table(dataset, table_id) %}
+            <div class="tab-pane fade" id="{{ table_id }}" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-dark data-table w-100 m-0">
                         <thead>
-                            <tr class="table-custom"><th>Rule / Policy Name</th><th>Src Zone / From</th><th>Source Address</th><th>Dst Zone / To</th><th>Dest Address</th><th>App / L7</th><th>Service / Port</th><th>Action</th></tr>
+                            <tr><th>Rule Name</th><th>From Zone</th><th>Source Addr</th><th>To Zone</th><th>Dest Addr</th><th>App Layer</th><th>Service/Port</th><th>Action</th></tr>
                         </thead>
                         <tbody>
-                            {% for rule in web_data.high_risk %}
+                            {% for rule in dataset %}
                             <tr>
-                                <td class="fw-bold" style="color: #58a6ff;">{{ rule['Name'] }}</td>
-                                <td>{{ rule['Source Zone'] }}</td>
+                                <td>{{ rule['Name'] }}</td>
+                                <td class="text-muted">{{ rule['Source Zone'] }}</td>
                                 <td>{{ rule['Source Address'] }}</td>
-                                <td>{{ rule['Destination Zone'] }}</td>
+                                <td class="text-muted">{{ rule['Destination Zone'] }}</td>
                                 <td>{{ rule['Destination Address'] }}</td>
                                 <td>{{ rule['Application'] }}</td>
                                 <td>{{ rule['Service'] }}</td>
-                                <td><span class="badge bg-secondary">{{ rule['Action'] }}</span></td>
+                                <td>
+                                    {% if rule['Action']|upper == 'ALLOW' or rule['Action']|upper == 'ACCEPT' %}
+                                        <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.5);">{{ rule['Action'] }}</span>
+                                    {% else %}
+                                        <span class="badge" style="background-color: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.5);">{{ rule['Action'] }}</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+            {% endmacro %}
 
-            <div class="tab-pane fade" id="zero" role="tabpanel">
-                <div class="card tech-card p-3">
-                    <table class="table table-dark table-hover data-table w-100">
-                        <thead>
-                            <tr class="table-custom"><th>Rule / Policy Name</th><th>Src Zone / From</th><th>Source Address</th><th>Dst Zone / To</th><th>Dest Address</th><th>App / L7</th><th>Service / Port</th><th>Action</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for rule in web_data.zero_hit %}
-                            <tr>
-                                <td style="color: #58a6ff;">{{ rule['Name'] }}</td><td>{{ rule['Source Zone'] }}</td><td>{{ rule['Source Address'] }}</td>
-                                <td>{{ rule['Destination Zone'] }}</td><td>{{ rule['Destination Address'] }}</td><td>{{ rule['Application'] }}</td>
-                                <td>{{ rule['Service'] }}</td><td><span class="badge bg-secondary">{{ rule['Action'] }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="src" role="tabpanel">
-                <div class="card tech-card p-3">
-                    <table class="table table-dark table-hover data-table w-100">
-                        <thead>
-                            <tr class="table-custom"><th>Rule / Policy Name</th><th>Src Zone / From</th><th>Source Address</th><th>Dst Zone / To</th><th>Dest Address</th><th>App / L7</th><th>Service / Port</th><th>Action</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for rule in web_data.source_any %}
-                            <tr>
-                                <td style="color: #58a6ff;">{{ rule['Name'] }}</td><td>{{ rule['Source Zone'] }}</td><td class="text-danger fw-bold">{{ rule['Source Address'] }}</td>
-                                <td>{{ rule['Destination Zone'] }}</td><td>{{ rule['Destination Address'] }}</td><td>{{ rule['Application'] }}</td>
-                                <td>{{ rule['Service'] }}</td><td><span class="badge bg-secondary">{{ rule['Action'] }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="dst" role="tabpanel">
-                <div class="card tech-card p-3">
-                    <table class="table table-dark table-hover data-table w-100">
-                        <thead>
-                            <tr class="table-custom"><th>Rule / Policy Name</th><th>Src Zone / From</th><th>Source Address</th><th>Dst Zone / To</th><th>Dest Address</th><th>App / L7</th><th>Service / Port</th><th>Action</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for rule in web_data.dest_any %}
-                            <tr>
-                                <td style="color: #58a6ff;">{{ rule['Name'] }}</td><td>{{ rule['Source Zone'] }}</td><td>{{ rule['Source Address'] }}</td>
-                                <td>{{ rule['Destination Zone'] }}</td><td class="text-danger fw-bold">{{ rule['Destination Address'] }}</td><td>{{ rule['Application'] }}</td>
-                                <td>{{ rule['Service'] }}</td><td><span class="badge bg-secondary">{{ rule['Action'] }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="srv" role="tabpanel">
-                <div class="card tech-card p-3">
-                    <table class="table table-dark table-hover data-table w-100">
-                        <thead>
-                            <tr class="table-custom"><th>Rule / Policy Name</th><th>Src Zone / From</th><th>Source Address</th><th>Dst Zone / To</th><th>Dest Address</th><th>App / L7</th><th>Service / Port</th><th>Action</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for rule in web_data.service_any %}
-                            <tr>
-                                <td style="color: #58a6ff;">{{ rule['Name'] }}</td><td>{{ rule['Source Zone'] }}</td><td>{{ rule['Source Address'] }}</td>
-                                <td>{{ rule['Destination Zone'] }}</td><td>{{ rule['Destination Address'] }}</td><td>{{ rule['Application'] }}</td>
-                                <td class="text-danger fw-bold">{{ rule['Service'] }}</td><td><span class="badge bg-secondary">{{ rule['Action'] }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            {{ render_rule_table(web_data.high_risk, 'high-risk') }}
+            {{ render_rule_table(web_data.med_risk, 'med-risk') }}
+            {{ render_rule_table(web_data.low_risk, 'low-risk') }}
+            
+            {{ render_rule_table(web_data.zero_hit, 'zero') }}
+            {{ render_rule_table(web_data.source_any, 'src') }}
+            {{ render_rule_table(web_data.dest_any, 'dst') }}
+            {{ render_rule_table(web_data.service_any, 'srv') }}
+            
+            {{ render_rule_table(web_data.total, 'total') }}
+            {{ render_rule_table(web_data.active, 'active') }}
+            {{ render_rule_table(web_data.active_hit, 'active-hit') }}
+            {{ render_rule_table(web_data.disabled, 'disabled') }}
+            
+            {{ render_rule_table(web_data.profile_issue, 'profile') }}
+            {{ render_rule_table(web_data.logs_none, 'logs') }}
+            {{ render_rule_table(web_data.tags_none, 'tags') }}
 
         </div>
     </div>
@@ -310,12 +341,65 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('.data-table').DataTable({
-                "pageLength": 10,
-                "lengthMenu": [10, 25, 50, 100],
-                "order": [[ 0, "asc" ]]
+            // Modernize DataTables DOM elements
+            $.extend( true, $.fn.dataTable.defaults, {
+                "language": {
+                    "search": "<i class='bi bi-search text-muted me-2'></i>",
+                    "searchPlaceholder": "Filter rules...",
+                    "lengthMenu": "_MENU_ per page"
+                }
             });
+
+            var table = $('.data-table').DataTable({
+                "pageLength": 25,
+                "lengthMenu": [10, 25, 50, 100],
+                "order": [[ 0, "asc" ]],
+                "dom": "<'row mb-3 align-items-center'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6 d-flex justify-content-end'f>>" +
+                       "<'row'<'col-sm-12'tr>>" +
+                       "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+            });
+
+            // Clean Input Styling for Search Bar
+            $('.dataTables_filter input').addClass('form-control form-control-sm d-inline-block w-auto').css('background-color', 'rgba(15, 23, 42, 0.6)');
+            $('.dataTables_length select').addClass('form-select form-select-sm d-inline-block w-auto').css('background-color', 'rgba(15, 23, 42, 0.6)');
         });
+
+        // PURE, CUSTOM JAVASCRIPT TAB LOGIC (Immune to Bootstrap Conflicts)
+        function switchTab(tabId) {
+            // 1. Hide all tab content panes
+            $('.tab-pane').removeClass('show active');
+            
+            // 2. Show the targeted tab pane
+            $('#' + tabId).addClass('show active');
+
+            // 3. De-highlight all navigation links
+            $('.nav-link').removeClass('active');
+            $('.dropdown-item').removeClass('active');
+
+            // 4. Highlight the newly selected link
+            var targetTrigger = $('#' + tabId + '-tab');
+            targetTrigger.addClass('active');
+
+            // 5. Highlight dropdown parent if target is inside the dropdown
+            if (targetTrigger.hasClass('dropdown-item')) {
+                $('#more-views-toggle').addClass('active');
+            }
+
+            // 6. FORCE CLOSE Bootstrap dropdown natively without stripping CSS
+            var dropdownElement = document.getElementById('more-views-toggle');
+            if (dropdownElement) {
+                var dropdownInstance = bootstrap.Dropdown.getInstance(dropdownElement);
+                if (dropdownInstance) {
+                    dropdownInstance.hide();
+                }
+            }
+
+            // 7. Adjust DataTables Column widths for newly visible table
+            $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+
+            // 8. Smooth scroll up to the tabs
+            document.getElementById('reviewTabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     </script>
 </body>
 </html>

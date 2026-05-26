@@ -2,3 +2,4 @@ venv/
 temp_uploads/
 temp_outputs/
 __pycache__/
+features.txt

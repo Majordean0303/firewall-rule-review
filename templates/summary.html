@@ -75,9 +75,6 @@
             transform: scale(1.05); 
         }
 
-        .progress-slim { height: 4px; background-color: var(--bg-dark); border-radius: 4px; overflow: hidden; margin-top: 8px;}
-        .bg-danger-custom { background-color: var(--danger-red) !important; }
-
         /* Buttons & Navigation Tabs */
         .btn-cyber { background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600;}
         .btn-cyber:hover { background-color: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);}
@@ -196,6 +193,7 @@
                     <li><a class="dropdown-item d-flex justify-content-between" id="low-risk-tab" href="javascript:void(0);" onclick="switchTab('low-risk')">Low Risk <span class="text-muted ms-3">{{ metrics.low_risk }}</span></a></li>
                     <li><hr class="dropdown-divider border-secondary"></li>
                     <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Config Flaws</h6></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="hr-ports-tab" href="javascript:void(0);" onclick="switchTab('hr-ports')">High Risk Ports <span class="text-danger-custom ms-3">{{ metrics.hr_ports }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="profile-tab" href="javascript:void(0);" onclick="switchTab('profile')">Profile Issues <span class="text-muted ms-3">{{ metrics.profile_issue }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="logs-tab" href="javascript:void(0);" onclick="switchTab('logs')">Logging Issues <span class="text-muted ms-3">{{ metrics.logs_none }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="tags-tab" href="javascript:void(0);" onclick="switchTab('tags')">Tagging Issues <span class="text-muted ms-3">{{ metrics.tags_none }}</span></a></li>
@@ -311,8 +309,14 @@
                 </div>
             </div>
 
-            {% macro render_rule_table(dataset, table_id) %}
+            {% macro render_rule_table(dataset, table_id, title) %}
             <div class="tab-pane fade" id="{{ table_id }}" role="tabpanel">
+                
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                    <h5 class="m-0 fw-bold text-light"><i class="bi bi-list-columns-reverse text-accent me-2"></i>{{ title }}</h5>
+                    <span class="badge bg-secondary rounded-pill px-3 py-2" style="font-size: 0.85rem;">{{ dataset|length }} Rules</span>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-dark data-table w-100 m-0">
                         <thead>
@@ -343,23 +347,24 @@
             </div>
             {% endmacro %}
 
-            {{ render_rule_table(web_data.high_risk, 'high-risk') }}
-            {{ render_rule_table(web_data.med_risk, 'med-risk') }}
-            {{ render_rule_table(web_data.low_risk, 'low-risk') }}
+            {{ render_rule_table(web_data.high_risk, 'high-risk', 'High Risk Rules (Broad Access)') }}
+            {{ render_rule_table(web_data.med_risk, 'med-risk', 'Medium Risk Rules (Configuration Flags)') }}
+            {{ render_rule_table(web_data.low_risk, 'low-risk', 'Low Risk Rules (Targeted & Healthy)') }}
             
-            {{ render_rule_table(web_data.zero_hit, 'zero') }}
-            {{ render_rule_table(web_data.source_any, 'src') }}
-            {{ render_rule_table(web_data.dest_any, 'dst') }}
-            {{ render_rule_table(web_data.service_any, 'srv') }}
+            {{ render_rule_table(web_data.zero_hit, 'zero', 'Stale Rules (Zero Hits Recorded)') }}
+            {{ render_rule_table(web_data.source_any, 'src', 'Source Address: ANY / ALL') }}
+            {{ render_rule_table(web_data.dest_any, 'dst', 'Destination Address: ANY / ALL') }}
+            {{ render_rule_table(web_data.service_any, 'srv', 'Service / Port: ANY / ALL') }}
             
-            {{ render_rule_table(web_data.total, 'total') }}
-            {{ render_rule_table(web_data.active, 'active') }}
-            {{ render_rule_table(web_data.active_hit, 'active-hit') }}
-            {{ render_rule_table(web_data.disabled, 'disabled') }}
+            {{ render_rule_table(web_data.total, 'total', 'Total Master Ruleset') }}
+            {{ render_rule_table(web_data.active, 'active', 'Active Rules') }}
+            {{ render_rule_table(web_data.active_hit, 'active-hit', 'Active Rules (With Hits)') }}
+            {{ render_rule_table(web_data.disabled, 'disabled', 'Disabled Rules') }}
             
-            {{ render_rule_table(web_data.profile_issue, 'profile') }}
-            {{ render_rule_table(web_data.logs_none, 'logs') }}
-            {{ render_rule_table(web_data.tags_none, 'tags') }}
+            {{ render_rule_table(web_data.hr_ports, 'hr-ports', 'High Risk Services / Ports') }}
+            {{ render_rule_table(web_data.profile_issue, 'profile', 'Missing Security Profiles') }}
+            {{ render_rule_table(web_data.logs_none, 'logs', 'Logging Disabled or Incomplete') }}
+            {{ render_rule_table(web_data.tags_none, 'tags', 'Missing Rule Tags') }}
 
         </div>
     </div>

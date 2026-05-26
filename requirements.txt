@@ -1,0 +1,13 @@
+# Web Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Data Processing & Analysis
+pandas==2.1.1
+numpy==1.26.0
+
+# Excel File Generation
+openpyxl==3.1.2
+
+# Production WSGI Server
+waitress==2.1.2

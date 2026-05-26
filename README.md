@@ -1,4 +1,3 @@
-```markdown
 # Firewall Policy Analyzer & Telemetry Dashboard 🛡️
 
 An automated Python and Flask-based internal tool designed to eliminate the manual, tedious process of reviewing firewall rules in spreadsheets. 
@@ -42,8 +41,7 @@ When exporting your ruleset, ensure you export to a `.csv` or `.xlsx` format and
    git clone [https://github.com/YourUsername/firewall-policy-analyzer.git](https://github.com/YourUsername/firewall-policy-analyzer.git)
    cd firewall-policy-analyzer
    pip install -r requirements.txt
-
-```
+    ```
 
 2. **Run the Application:**
 ```bash

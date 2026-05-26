@@ -61,9 +61,3 @@ python app.py
 * `app.py`: The main Flask routing engine, Pandas risk-calculation logic, and Openpyxl Excel-export logic.
 * `templates/index.html`: The Jinja2 HTML frontend for the upload gateway.
 * `templates/summary.html`: The Jinja2 HTML frontend for the interactive telemetry dashboard and data tables.
-
-```
-
-*(Note: If you were actually looking for the complete `app.py` or `summary.html` files instead, just let me know and I will print those out in full for you!)*
-
-```

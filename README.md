@@ -8,7 +8,6 @@ This tool parses raw CSV/Excel exports from Palo Alto and Fortinet firewalls and
 
 * **Automated Risk Profiling:** Mathematically evaluates firewall rules and categorizes them into High, Medium, and Low risk threat levels based on permissive access ('ANY') and missing security profiles.
 * **Smart Auto-Detection:** Automatically navigates and parses disparate CSV/Excel headers to detect if the upload is from Palo Alto Networks (PAN-OS / Panorama) or Fortinet (FortiOS / FortiManager).
-* **High-Risk Service Detection:** Uses strict regex to scan service and port columns for legacy, insecure protocols (e.g., SSH/22, Telnet/23, RDP/3389).
 * **Zero-Hit / Stale Rule Identification:** Automatically filters out disabled rules and identifies active policies that have zero hits to clean up firewall CPU cycles.
 * **Modern Web UI:** Built with custom CSS featuring a dark-mode "Glassmorphism" interface, interactive jQuery DataTables, and a dynamic Posture Health Score ring.
 

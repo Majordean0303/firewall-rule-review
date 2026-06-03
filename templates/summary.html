@@ -199,7 +199,52 @@
                 </ul>
             </li>
         </ul>
+        {% if web_data.nist %}
+            <div class="card mb-4 shadow-sm border-info">
+                <div class="card-header bg-info text-white fw-bold">
+                    <i class="bi bi-shield-check me-2"></i> NIST 800-41 Compliance & Telemetry
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 border-end">
+                            <h6 class="text-muted small text-uppercase">Firmware Version</h6>
+                            <span class="fs-5 fw-bold text-body">{{ web_data.nist.sw_version }}</span>
+                        </div>
+                        
+                        <div class="col-md-3 border-end">
+                            <h6 class="text-muted small text-uppercase">Default Deny Rule</h6>
+                            {% if web_data.nist.default_deny_enforced %}
+                                <span class="fs-5 fw-bold text-success"><i class="bi bi-check-circle-fill"></i> Enforced</span>
+                            {% else %}
+                                <span class="fs-5 fw-bold text-danger"><i class="bi bi-x-circle-fill"></i> Missing / Failed</span>
+                            {% endif %}
+                        </div>
 
+                        <div class="col-md-3 border-end">
+                            <h6 class="text-muted small text-uppercase">Undocumented Rules</h6>
+                            {% if metrics.undocumented_rules == 0 %}
+                                <span class="fs-5 fw-bold text-success">0 Violations</span>
+                            {% else %}
+                                <span class="fs-5 fw-bold text-warning">{{ metrics.undocumented_rules }} Violations</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3">
+                            <h6 class="text-muted small text-uppercase">Insecure Mgmt Profiles</h6>
+                            {% if web_data.nist.insecure_mgt_profiles|length > 0 %}
+                                <ul class="text-danger mb-0 ps-3 small fw-bold">
+                                {% for profile in web_data.nist.insecure_mgt_profiles %}
+                                    <li>{{ profile }}</li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <span class="fs-5 fw-bold text-success"><i class="bi bi-check-circle-fill"></i> Secured</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         <div class="tab-content" id="reviewTabsContent">
             
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">

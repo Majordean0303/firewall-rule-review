@@ -4,142 +4,411 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telemetry Review - {{ site_name }}</title>
+
+    <script>
+        (function () {
+            try {
+                const stored = localStorage.getItem("theme");
+                const preferred = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+                const theme = stored || preferred;
+                document.documentElement.setAttribute("data-bs-theme", theme);
+            } catch (e) {}
+        })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    
+
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --surface-dark: #1e293b;
-            --surface-border: #334155;
-            --accent-blue: #38bdf8;
+            --bg-color: #f5f7fb;
+            --bg-accent-1: rgba(37, 99, 235, 0.08);
+            --bg-accent-2: rgba(14, 165, 233, 0.08);
+            --surface-color: rgba(255, 255, 255, 0.82);
+            --surface-strong: rgba(255, 255, 255, 0.96);
+            --surface-border: rgba(15, 23, 42, 0.10);
+            --surface-soft: rgba(248, 250, 252, 0.80);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent-blue: #2563eb;
             --danger-red: #ef4444;
             --warn-yellow: #f59e0b;
             --success-green: #10b981;
-            --text-main: #f8fafc;
+            --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.10);
+            --shadow-md: 0 12px 30px rgba(15, 23, 42, 0.08);
+            --radius-xl: 24px;
+            --radius-lg: 20px;
+            --radius-md: 16px;
+        }
+
+        [data-bs-theme="dark"] {
+            --bg-color: #0b1220;
+            --bg-accent-1: rgba(56, 189, 248, 0.08);
+            --bg-accent-2: rgba(139, 92, 246, 0.08);
+            --surface-color: rgba(15, 23, 42, 0.72);
+            --surface-strong: rgba(15, 23, 42, 0.92);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --surface-soft: rgba(15, 23, 42, 0.55);
+            --text-main: #e2e8f0;
             --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --danger-red: #f87171;
+            --warn-yellow: #fbbf24;
+            --success-green: #34d399;
+            --shadow-lg: 0 30px 70px rgba(0, 0, 0, 0.38);
+            --shadow-md: 0 14px 34px rgba(0, 0, 0, 0.28);
         }
 
-        body { 
-            background-color: var(--bg-dark); 
-            color: var(--text-main); 
-            font-family: 'Inter', sans-serif; 
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100vh;
             padding-top: 1rem;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 15% 20%, var(--bg-accent-1), transparent 26%),
+                radial-gradient(circle at 85% 10%, var(--bg-accent-2), transparent 22%);
         }
 
-        /* Glass / Surface Cards */
-        .tech-card { 
-            background-color: var(--surface-dark); 
-            border: 1px solid var(--surface-border); 
-            border-radius: 12px; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        .app-shell {
+            position: relative;
+            z-index: 1;
         }
-        
-        .metric-card { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border-radius: 12px; }
-        .metric-card:hover { transform: translateY(-4px); }
-        .metric-card.danger { background: linear-gradient(180deg, rgba(239, 68, 68, 0.1) 0%, var(--surface-dark) 100%); border-color: rgba(239, 68, 68, 0.3); }
-        .metric-card.warning { background: linear-gradient(180deg, rgba(245, 158, 11, 0.1) 0%, var(--surface-dark) 100%); border-color: rgba(245, 158, 11, 0.3); }
-        .metric-card.success { background: linear-gradient(180deg, rgba(16, 185, 129, 0.1) 0%, var(--surface-dark) 100%); border-color: rgba(16, 185, 129, 0.3); }
 
-        /* Typography */
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1050;
+            width: 48px;
+            height: 48px;
+            border-radius: 999px;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-color);
+            backdrop-filter: blur(14px);
+            box-shadow: var(--shadow-md);
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-1px);
+            border-color: rgba(56, 189, 248, 0.45);
+        }
+
+        .tech-card,
+        .metric-card,
+        .table-card,
+        .hero-panel {
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .hero-panel {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(14, 165, 233, 0.08));
+        }
+
+        .metric-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 20px 44px rgba(15, 23, 42, 0.16);
+        }
+
+        .metric-card.danger { background: linear-gradient(180deg, rgba(239, 68, 68, 0.12) 0%, var(--surface-color) 100%); }
+        .metric-card.warning { background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, var(--surface-color) 100%); }
+        .metric-card.success { background: linear-gradient(180deg, rgba(16, 185, 129, 0.12) 0%, var(--surface-color) 100%); }
+
         .text-accent { color: var(--accent-blue) !important; }
         .text-danger-custom { color: var(--danger-red) !important; }
         .text-warning-custom { color: var(--warn-yellow) !important; }
         .text-success-custom { color: var(--success-green) !important; }
-        .metric-value-large { font-size: 3.5rem; font-weight: 700; line-height: 1; letter-spacing: -2px; }
 
-        /* Dashboard Table Styling */
-        .dashboard-table td, .dashboard-table th { border-color: var(--surface-border); vertical-align: middle; padding: 1rem; }
-        .dashboard-header-row th { background-color: rgba(15, 23, 42, 0.5); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-top: 1px solid var(--surface-border);}
-        
-        .clickable-metric { 
-            cursor: pointer; 
+        .metric-value-large {
+            font-size: 3.4rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.05em;
+        }
+
+        .clickable-metric {
+            cursor: pointer;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             color: var(--text-main);
-            transition: all 0.2s ease; 
+            transition: all 0.2s ease;
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 6px;
+            padding: 0.35rem 0.8rem;
+            border-radius: 0.8rem;
             background-color: rgba(255,255,255,0.03);
             border: 1px solid transparent;
         }
-        .clickable-metric:hover { 
-            background-color: rgba(56, 189, 248, 0.1); 
-            border-color: rgba(56, 189, 248, 0.3);
+        .clickable-metric:hover {
+            background-color: rgba(56, 189, 248, 0.10);
+            border-color: rgba(56, 189, 248, 0.25);
             color: var(--accent-blue) !important;
-            transform: scale(1.05); 
+            transform: scale(1.03);
         }
 
-        /* Buttons & Navigation Tabs */
-        .btn-cyber { background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 600;}
-        .btn-cyber:hover { background-color: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);}
-        
-        .nav-tabs { border-bottom: 2px solid var(--surface-border); }
-        .nav-tabs .nav-link { color: var(--text-muted); border: none; padding: 12px 20px; font-weight: 500;}
-        .nav-tabs .nav-link.active { background: transparent; border-bottom: 3px solid var(--accent-blue); color: var(--text-main); font-weight: 600;}
-        .nav-tabs .nav-item .badge { font-size: 0.7rem; transform: translateY(-1px); }
+        .nav-tabs {
+            border-bottom: 1px solid var(--surface-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: color-mix(in srgb, var(--bg-color) 82%, transparent);
+            border-radius: 18px;
+            padding: 0.25rem 0.25rem 0;
+        }
 
-        /* DataTables Custom Overrides */
-        table.dataTable { border-collapse: separate; border-spacing: 0 8px; margin-top: -8px !important; }
-        table.dataTable>thead>tr>th { border-bottom: none; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 4px;}
-        table.dataTable>tbody>tr { background-color: rgba(15, 23, 42, 0.4); transition: background-color 0.2s;}
-        table.dataTable>tbody>tr>td { border-top: 1px solid var(--surface-border); border-bottom: 1px solid var(--surface-border); padding: 12px 16px; font-size: 0.9rem;}
-        table.dataTable>tbody>tr>td:first-child { border-left: 1px solid var(--surface-border); border-top-left-radius: 8px; border-bottom-left-radius: 8px; font-weight: 600; color: var(--text-main);}
-        table.dataTable>tbody>tr>td:last-child { border-right: 1px solid var(--surface-border); border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
-        table.dataTable>tbody>tr:hover { background-color: rgba(56, 189, 248, 0.05); }
-        
-        .dataTables_wrapper .dataTables_paginate .paginate_button { border-radius: 6px !important; border: 1px solid var(--surface-border) !important; background: var(--surface-dark) !important; color: var(--text-main) !important; margin: 0 4px;}
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--accent-blue) !important; color: #000 !important; border-color: var(--accent-blue) !important;}
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px;}
-        ::-webkit-scrollbar-track { background: var(--bg-dark); }
-        ::-webkit-scrollbar-thumb { background: var(--surface-border); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .nav-tabs .nav-link {
+            color: var(--text-muted);
+            border: none;
+            padding: 0.9rem 1.15rem;
+            font-weight: 500;
+            border-radius: 14px 14px 0 0;
+        }
+        .nav-tabs .nav-link.active {
+            background: transparent;
+            border-bottom: 3px solid var(--accent-blue);
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .nav-tabs .nav-item .badge {
+            font-size: 0.7rem;
+            transform: translateY(-1px);
+        }
+
+        .btn-cyber {
+            background: linear-gradient(135deg, var(--accent-blue), #0ea5e9);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+        }
+        .btn-cyber:hover {
+            color: white;
+            filter: brightness(1.03);
+            box-shadow: 0 16px 34px rgba(37, 99, 235, 0.28);
+        }
+
+        .btn-outline-secondary {
+            border-radius: 14px;
+            border-color: var(--surface-border);
+            color: var(--text-main);
+        }
+
+        .btn-outline-secondary:hover {
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.35);
+            color: var(--text-main);
+        }
+
+        .dashboard-table td,
+        .dashboard-table th {
+            border-color: var(--surface-border);
+            vertical-align: middle;
+            padding: 1rem;
+        }
+
+        .dashboard-header-row th {
+            background-color: var(--surface-soft);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.10em;
+            color: var(--text-muted);
+            border-top: 1px solid var(--surface-border);
+        }
+
+        table.dataTable {
+            border-collapse: separate;
+            border-spacing: 0 10px;
+            margin-top: -10px !important;
+        }
+
+        table.dataTable>thead>tr>th {
+            border-bottom: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding-bottom: 0.6rem;
+        }
+
+        table.dataTable>tbody>tr {
+            background-color: var(--surface-soft);
+            transition: background-color 0.2s;
+        }
+
+        table.dataTable>tbody>tr>td {
+            border-top: 1px solid var(--surface-border);
+            border-bottom: 1px solid var(--surface-border);
+            padding: 12px 16px;
+            font-size: 0.9rem;
+        }
+
+        table.dataTable>tbody>tr>td:first-child {
+            border-left: 1px solid var(--surface-border);
+            border-top-left-radius: 14px;
+            border-bottom-left-radius: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        table.dataTable>tbody>tr>td:last-child {
+            border-right: 1px solid var(--surface-border);
+            border-top-right-radius: 14px;
+            border-bottom-right-radius: 14px;
+        }
+
+        table.dataTable>tbody>tr:hover {
+            background-color: rgba(56, 189, 248, 0.06);
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 10px !important;
+            border: 1px solid var(--surface-border) !important;
+            background: var(--surface-color) !important;
+            color: var(--text-main) !important;
+            margin: 0 4px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--accent-blue) !important;
+            color: #fff !important;
+            border-color: var(--accent-blue) !important;
+        }
+
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select {
+            background-color: var(--surface-strong) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--surface-border) !important;
+            border-radius: 12px !important;
+            box-shadow: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus,
+        .dataTables_wrapper .dataTables_length select:focus {
+            border-color: rgba(56, 189, 248, 0.45) !important;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.10) !important;
+        }
+
+        .dropdown-menu {
+            border-radius: 16px;
+            border: 1px solid var(--surface-border);
+            background: var(--surface-strong);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .dropdown-item {
+            color: var(--text-main);
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item.active {
+            background: rgba(56, 189, 248, 0.10);
+            color: var(--text-main);
+        }
+
+        .info-banner {
+            border-radius: 18px;
+            border: 1px solid var(--surface-border);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(139, 92, 246, 0.06));
+        }
+
+        ::-webkit-scrollbar { width: 9px; height: 9px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.55); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.8); }
+
+        @media (max-width: 767.98px) {
+            .theme-toggle {
+                top: auto;
+                right: 1rem;
+                bottom: 1rem;
+            }
+            .metric-value-large {
+                font-size: 2.7rem;
+            }
+            .nav-tabs {
+                top: 0.35rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container-fluid mb-5 px-4">
-        
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-3">
-            <div class="d-flex align-items-center">
-                <div>
-                    <h3 class="fw-bold mb-1">Telemetry Dashboard</h3>
-                    <div class="d-flex align-items-center text-muted" style="font-size: 0.85rem;">
-                        <i class="bi bi-hdd-network-fill me-2 text-accent"></i> TARGET NODE: <span class="fw-bold text-light ms-2">{{ site_name | upper }}</span>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme">
+        <i class="bi bi-moon-stars fs-5"></i>
+    </button>
+
+    <div class="container-fluid mb-5 px-3 px-md-4 app-shell">
+
+        <div class="hero-panel p-4 p-md-5 mb-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-4 align-items-lg-center">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="rounded-4 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width: 72px; height: 72px; background: linear-gradient(135deg, rgba(56,189,248,.20), rgba(139,92,246,.16)); border: 1px solid var(--surface-border);">
+                        <i class="bi bi-shield-check fs-2 text-info"></i>
+                    </div>
+                    <div>
+                        <div class="label-kicker text-uppercase mb-2" style="letter-spacing: .18em; font-size: .74rem; color: var(--text-muted); font-weight: 700;">
+                            Telemetry Review
+                        </div>
+                        <h3 class="fw-bold mb-2">Telemetry Dashboard</h3>
+                        <div class="d-flex align-items-center flex-wrap gap-2" style="color: var(--text-muted); font-size: 0.9rem;">
+                            <i class="bi bi-hdd-network-fill text-accent"></i>
+                            TARGET NODE:
+                            <span class="fw-bold text-main">{{ site_name | upper }}</span>
+                        </div>
                     </div>
                 </div>
-                
+
                 {% set active_count = metrics.active_rules if metrics.active_rules > 0 else 1 %}
                 {% set health_score = ((metrics.low_risk / active_count) * 100) | int %}
-                
-                <div class="ms-5 ps-4 border-start border-secondary d-none d-md-flex align-items-center">
-                    <div class="me-3 text-end">
-                        <div class="text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 1px;">Overall Posture</div>
-                        <div class="fw-bold" style="font-size: 0.9rem;">
+
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div class="text-end">
+                        <div class="text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.12em; color: var(--text-muted);">Overall Posture</div>
+                        <div class="fw-bold" style="font-size: 0.95rem;">
                             {% if health_score >= 80 %} <span class="text-success-custom">Healthy</span>
                             {% elif health_score >= 50 %} <span class="text-warning-custom">Needs Review</span>
                             {% else %} <span class="text-danger-custom">Critical Risk</span>
                             {% endif %}
                         </div>
                     </div>
-                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5 shadow" 
-                         style="width: 55px; height: 55px; 
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5 shadow"
+                         style="width: 60px; height: 60px;
                                 border: 3px solid {% if health_score >= 80 %}var(--success-green){% elif health_score >= 50 %}var(--warn-yellow){% else %}var(--danger-red){% endif %};
-                                background-color: rgba(15, 23, 42, 0.5);">
+                                background-color: rgba(15, 23, 42, 0.25);">
                         {{ health_score }}
                     </div>
+                    <div class="d-flex gap-2">
+                        <a href="/" class="btn btn-outline-secondary px-4"><i class="bi bi-arrow-left me-1"></i> New Scan</a>
+                        <a href="download/{{ output_filename }}" class="btn btn-cyber px-4"><i class="bi bi-cloud-download me-2"></i> Export Report</a>
+                    </div>
                 </div>
-            </div>
-            
-            <div>
-                <a href="/" class="btn btn-outline-secondary me-2 px-4"><i class="bi bi-arrow-left me-1"></i> New Scan</a>
-                <a href="download/{{ output_filename }}" class="btn btn-cyber px-4"><i class="bi bi-cloud-download me-2"></i> Export Report</a>
             </div>
         </div>
 
@@ -151,7 +420,7 @@
             </li>
             <li class="nav-item">
                 <button class="nav-link px-3 pb-2" id="high-risk-tab" type="button" onclick="switchTab('high-risk')">
-                    <span class="text-danger-custom fw-bold"><i class="bi bi-shield-x me-1"></i>High Risk</span> 
+                    <span class="text-danger-custom fw-bold"><i class="bi bi-shield-x me-1"></i>High Risk</span>
                     <span class="badge bg-danger rounded-pill ms-1">{{ metrics.high_risk }}</span>
                 </button>
             </li>
@@ -182,12 +451,12 @@
                     Svc: ANY <span class="badge bg-secondary rounded-pill ms-1">{{ metrics.service_any }}</span>
                 </button>
             </li>
-            
+
             <li class="nav-item dropdown ms-auto">
                 <a class="nav-link dropdown-toggle text-muted border-0 pb-2" id="more-views-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
                     <i class="bi bi-funnel"></i> Filters
                 </a>
-                <ul class="dropdown-menu dropdown-menu-dark shadow" style="border: 1px solid var(--surface-border);">
+                <ul class="dropdown-menu dropdown-menu-dark shadow">
                     <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Core Rulesets</h6></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="total-tab" href="javascript:void(0);" onclick="switchTab('total')">Total Master <span class="text-muted ms-3">{{ metrics.total_rules }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="active-tab" href="javascript:void(0);" onclick="switchTab('active')">Active Rules <span class="text-muted ms-3">{{ metrics.active_rules }}</span></a></li>
@@ -205,19 +474,20 @@
                 </ul>
             </li>
         </ul>
+
         {% if web_data.nist %}
-            <div class="card mb-4 shadow-sm border-info">
-                <div class="card-header bg-info text-white fw-bold">
-                    <i class="bi bi-shield-check me-2"></i> NIST 800-41 Compliance & Telemetry
+            <div class="info-banner mb-4">
+                <div class="card-header bg-transparent border-0 fw-bold px-4 pt-4 pb-0">
+                    <i class="bi bi-shield-check me-2 text-info"></i> NIST 800-41 Compliance & Telemetry
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 border-end">
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-3 border-end" style="border-color: var(--surface-border) !important;">
                             <h6 class="text-muted small text-uppercase">Firmware Version</h6>
-                            <span class="fs-5 fw-bold text-body">{{ web_data.nist.sw_version }}</span>
+                            <span class="fs-5 fw-bold">{{ web_data.nist.sw_version }}</span>
                         </div>
-                        
-                        <div class="col-md-3 border-end">
+
+                        <div class="col-md-3 border-end" style="border-color: var(--surface-border) !important;">
                             <h6 class="text-muted small text-uppercase">Default Deny Rule</h6>
                             {% if web_data.nist.default_deny_enforced %}
                                 <span class="fs-5 fw-bold text-success"><i class="bi bi-check-circle-fill"></i> Enforced</span>
@@ -226,7 +496,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="col-md-3 border-end clickable-metric" onclick="switchTab('nist')">
+                        <div class="col-md-3 border-end clickable-metric" onclick="switchTab('nist')" style="border-color: var(--surface-border) !important;">
                             <h6 class="text-muted small text-uppercase">Undocumented Rules</h6>
                             {% if metrics.undocumented_rules == 0 %}
                                 <span class="fs-5 fw-bold text-success">0 Violations</span>
@@ -249,12 +519,13 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
+        {% endif %}
+
         <div class="tab-content" id="reviewTabsContent">
-            
+
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
                 <div class="mx-auto" style="max-width: 950px;">
-                    
+
                     <div class="row g-4 mb-4">
                         <div class="col-md-4">
                             <div class="tech-card metric-card danger p-4 h-100" onclick="switchTab('high-risk')">
@@ -288,7 +559,7 @@
                         </div>
                     </div>
 
-                    <div class="tech-card overflow-hidden">
+                    <div class="table-card overflow-hidden">
                         <div class="table-responsive">
                             <table class="table table-dark table-borderless dashboard-table mb-0 text-center align-middle">
                                 <tbody>
@@ -300,7 +571,7 @@
                                         <td><span class="clickable-metric" onclick="switchTab('disabled')">{{ metrics.disabled_rules }}</span></td>
                                         <td><span class="clickable-metric text-accent" onclick="switchTab('active')">{{ metrics.active_rules }}</span></td>
                                     </tr>
-            
+
                                     <tr class="dashboard-header-row">
                                         <th>Active Rules</th><th>Stale Review (0 Hit)</th><th>Active Hit Rules</th>
                                     </tr>
@@ -309,7 +580,7 @@
                                         <td><span class="clickable-metric text-warning-custom" onclick="switchTab('zero')">{{ metrics.zero_hit_rules }}</span></td>
                                         <td><span class="clickable-metric text-accent" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
                                     </tr>
-            
+
                                     <tr class="dashboard-header-row">
                                         <th>Active Hit Rules</th><th>Source Any / All</th><th>Requires Review</th>
                                     </tr>
@@ -320,7 +591,7 @@
                                             <span class="clickable-metric text-danger-custom" onclick="switchTab('src')">{{ metrics.source_any }}</span>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="dashboard-header-row">
                                         <th>Active Hit Rules</th><th>Destination Any / All</th><th>Requires Review</th>
                                     </tr>
@@ -331,7 +602,7 @@
                                             <span class="clickable-metric text-danger-custom" onclick="switchTab('dst')">{{ metrics.destination_any }}</span>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="dashboard-header-row">
                                         <th>Active Hit Rules</th><th>Service Any / All</th><th>Requires Review</th>
                                     </tr>
@@ -369,48 +640,51 @@
 
             {% macro render_rule_table(dataset, table_id, title) %}
             <div class="tab-pane fade" id="{{ table_id }}" role="tabpanel">
-                
-                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
-                    <h5 class="m-0 fw-bold text-light"><i class="bi bi-list-columns-reverse text-accent me-2"></i>{{ title }}</h5>
-                    <span class="badge bg-secondary rounded-pill px-3 py-2" style="font-size: 0.85rem;">{{ dataset|length }} Rules</span>
-                </div>
+                <div class="table-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3" style="border-color: var(--surface-border) !important;">
+                        <h5 class="m-0 fw-bold"><i class="bi bi-list-columns-reverse text-accent me-2"></i>{{ title }}</h5>
+                        <span class="badge rounded-pill px-3 py-2" style="font-size: 0.85rem; background: rgba(148,163,184,0.18); color: var(--text-main); border: 1px solid var(--surface-border);">{{ dataset|length }} Rules</span>
+                    </div>
 
-                <div class="table-responsive">
-                    <table class="table table-dark data-table w-100 m-0">
-                        <thead>
-                            <tr><th>Rule Name</th><th>From Zone</th><th>Source Addr</th><th>To Zone</th><th>Dest Addr</th><th>App Layer</th><th>Service/Port</th><th>Action</th><th>NIST Doc</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for rule in dataset %}
-                            <tr>
-                                <td>{{ rule['Name'] }}</td>
-                                <td class="text-muted">{{ rule['Source Zone'] }}</td>
-                                <td>{{ rule['Source Address'] }}</td>
-                                <td class="text-muted">{{ rule['Destination Zone'] }}</td>
-                                <td>{{ rule['Destination Address'] }}</td>
-                                <td>{{ rule['Application'] }}</td>
-                                <td>{{ rule['Service'] }}</td>
-                                <td>
-                                    {% if rule['Action']|upper == 'ALLOW' or rule['Action']|upper == 'ACCEPT' %}
-                                        <span class="badge" style="background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.5);">{{ rule['Action'] }}</span>
-                                    {% else %}
-                                        <span class="badge" style="background-color: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.5);">{{ rule['Action'] }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% set doc_status = rule.get('NIST Documented', 'N/A') %}
-                                    {% if doc_status == 'Yes' %}
-                                        <span class="text-success fs-5"><i class="bi bi-check-circle"></i></span>
-                                    {% elif doc_status == 'No' %}
-                                        <span class="text-danger fs-5"><i class="bi bi-x-circle"></i></span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-borderless data-table w-100 m-0">
+                            <thead>
+                                <tr>
+                                    <th>Rule Name</th><th>From Zone</th><th>Source Addr</th><th>To Zone</th><th>Dest Addr</th><th>App Layer</th><th>Service/Port</th><th>Action</th><th>NIST Doc</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rule in dataset %}
+                                <tr>
+                                    <td>{{ rule['Name'] }}</td>
+                                    <td class="text-muted">{{ rule['Source Zone'] }}</td>
+                                    <td>{{ rule['Source Address'] }}</td>
+                                    <td class="text-muted">{{ rule['Destination Zone'] }}</td>
+                                    <td>{{ rule['Destination Address'] }}</td>
+                                    <td>{{ rule['Application'] }}</td>
+                                    <td>{{ rule['Service'] }}</td>
+                                    <td>
+                                        {% if rule['Action']|upper == 'ALLOW' or rule['Action']|upper == 'ACCEPT' %}
+                                            <span class="badge" style="background-color: rgba(16, 185, 129, 0.15); color: var(--success-green); border: 1px solid rgba(16, 185, 129, 0.35);">{{ rule['Action'] }}</span>
+                                        {% else %}
+                                            <span class="badge" style="background-color: rgba(100, 116, 139, 0.15); color: var(--text-muted); border: 1px solid rgba(100, 116, 139, 0.35);">{{ rule['Action'] }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% set doc_status = rule.get('NIST Documented', 'N/A') %}
+                                        {% if doc_status == 'Yes' %}
+                                            <span class="text-success fs-5"><i class="bi bi-check-circle"></i></span>
+                                        {% elif doc_status == 'No' %}
+                                            <span class="text-danger fs-5"><i class="bi bi-x-circle"></i></span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             {% endmacro %}
@@ -423,17 +697,17 @@
             {{ render_rule_table(web_data.source_any, 'src', 'Source Address: ANY / ALL') }}
             {{ render_rule_table(web_data.dest_any, 'dst', 'Destination Address: ANY / ALL') }}
             {{ render_rule_table(web_data.service_any, 'srv', 'Service / Port: ANY / ALL') }}
-            
+
             {{ render_rule_table(web_data.total, 'total', 'Total Master Ruleset') }}
             {{ render_rule_table(web_data.active, 'active', 'Active Rules') }}
             {{ render_rule_table(web_data.active_hit, 'active-hit', 'Active Rules (With Hits)') }}
             {{ render_rule_table(web_data.disabled, 'disabled', 'Disabled Rules') }}
+
+            {{ render_rule_table(web_data.risky_ports, 'hr-ports', 'High Risk Services / Ports') }}
             
-            {{ render_rule_table(web_data.hr_ports, 'hr-ports', 'High Risk Services / Ports') }}
             {{ render_rule_table(web_data.profile_issue, 'profile', 'Missing Security Profiles') }}
             {{ render_rule_table(web_data.logs_none, 'logs', 'Logging Disabled or Incomplete') }}
             {{ render_rule_table(web_data.tags_none, 'tags', 'Missing Rule Tags') }}
-
         </div>
     </div>
 
@@ -442,27 +716,42 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
-        $(document).ready(function() {
-            $.extend( true, $.fn.dataTable.defaults, {
-                "language": {
-                    "search": "<i class='bi bi-search text-muted me-2'></i>",
-                    "searchPlaceholder": "Filter rules...",
-                    "lengthMenu": "_MENU_ per page"
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+
+            const icon = document.querySelector('#themeToggle i');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'bi bi-moon-stars fs-5' : 'bi bi-sun-fill fs-5';
+            }
+
+            // Small polish for tables and controls after theme change.
+            window.setTimeout(() => {
+                $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+            }, 50);
+        }
+
+        function initDataTables() {
+            $.extend(true, $.fn.dataTable.defaults, {
+                language: {
+                    search: "<i class='bi bi-search text-muted me-2'></i>",
+                    searchPlaceholder: "Filter rules...",
+                    lengthMenu: "_MENU_ per page"
                 }
             });
 
-            var table = $('.data-table').DataTable({
-                "pageLength": 25,
-                "lengthMenu": [10, 25, 50, 100],
-                "order": [[ 0, "asc" ]],
-                "dom": "<'row mb-3 align-items-center'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6 d-flex justify-content-end'f>>" +
-                       "<'row'<'col-sm-12'tr>>" +
-                       "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
+            $('.data-table').DataTable({
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100],
+                order: [[0, "asc"]],
+                dom: "<'row mb-3 align-items-center'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6 d-flex justify-content-end'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>"
             });
 
-            $('.dataTables_filter input').addClass('form-control form-control-sm d-inline-block w-auto').css('background-color', 'rgba(15, 23, 42, 0.6)');
-            $('.dataTables_length select').addClass('form-select form-select-sm d-inline-block w-auto').css('background-color', 'rgba(15, 23, 42, 0.6)');
-        });
+            $('.dataTables_filter input').addClass('form-control form-control-sm d-inline-block w-auto');
+            $('.dataTables_length select').addClass('form-select form-select-sm d-inline-block w-auto');
+        }
 
         function switchTab(tabId) {
             $('.tab-pane').removeClass('show active');
@@ -487,9 +776,28 @@
             }
 
             $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
-
             document.getElementById('reviewTabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const current = document.documentElement.getAttribute('data-bs-theme') || 'dark';
+            applyTheme(current);
+
+            const toggle = document.getElementById('themeToggle');
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    const next = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+                    applyTheme(next);
+                });
+            }
+
+            initDataTables();
+
+            const firstDataTable = $('.data-table').first().DataTable();
+            if (firstDataTable) {
+                firstDataTable.columns.adjust();
+            }
+        });
     </script>
 </body>
 </html>

@@ -156,6 +156,12 @@
                 </button>
             </li>
             <li class="nav-item">
+                <button class="nav-link px-3 pb-2" id="nist-tab" type="button" onclick="switchTab('nist')">
+                    <span class="text-info fw-bold"><i class="bi bi-journal-x me-1"></i>NIST Violations</span>
+                    <span class="badge bg-info text-dark rounded-pill ms-1">{{ metrics.undocumented_rules }}</span>
+                </button>
+            </li>
+            <li class="nav-item">
                 <button class="nav-link px-3 pb-2" id="zero-tab" type="button" onclick="switchTab('zero')">
                     <span class="text-warning-custom"><i class="bi bi-clock-history me-1"></i>Stale (0 Hit)</span>
                     <span class="badge bg-warning text-dark rounded-pill ms-1">{{ metrics.zero_hit_rules }}</span>
@@ -220,7 +226,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="col-md-3 border-end">
+                        <div class="col-md-3 border-end clickable-metric" onclick="switchTab('nist')">
                             <h6 class="text-muted small text-uppercase">Undocumented Rules</h6>
                             {% if metrics.undocumented_rules == 0 %}
                                 <span class="fs-5 fw-bold text-success">0 Violations</span>
@@ -228,7 +234,6 @@
                                 <span class="fs-5 fw-bold text-warning">{{ metrics.undocumented_rules }} Violations</span>
                             {% endif %}
                         </div>
-
                         <div class="col-md-3">
                             <h6 class="text-muted small text-uppercase">Insecure Mgmt Profiles</h6>
                             {% if web_data.nist.insecure_mgt_profiles|length > 0 %}
@@ -337,7 +342,16 @@
                                             <span class="clickable-metric text-danger-custom" onclick="switchTab('srv')">{{ metrics.service_any }}</span>
                                         </td>
                                     </tr>
-            
+                                    <tr class="dashboard-header-row">
+                                        <th>Active Hit Rules</th><th>NIST Violations (Undocumented)</th><th>Requires Review</th>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="clickable-metric" onclick="switchTab('active-hit')">{{ metrics.active_hit_rules }}</span></td>
+                                        <td><span class="clickable-metric text-info" onclick="switchTab('nist')">{{ metrics.undocumented_rules }}</span></td>
+                                        <td class="px-5">
+                                            <span class="clickable-metric text-warning-custom" onclick="switchTab('nist')">{{ metrics.undocumented_rules }}</span>
+                                        </td>
+                                    </tr>
                                     <tr class="dashboard-header-row">
                                         <th>Active Hit Rules</th><th>Security Profile Issue</th><th>Logging Issue</th>
                                     </tr>
@@ -364,7 +378,7 @@
                 <div class="table-responsive">
                     <table class="table table-dark data-table w-100 m-0">
                         <thead>
-                            <tr><th>Rule Name</th><th>From Zone</th><th>Source Addr</th><th>To Zone</th><th>Dest Addr</th><th>App Layer</th><th>Service/Port</th><th>Action</th></tr>
+                            <tr><th>Rule Name</th><th>From Zone</th><th>Source Addr</th><th>To Zone</th><th>Dest Addr</th><th>App Layer</th><th>Service/Port</th><th>Action</th><th>NIST Doc</th></tr>
                         </thead>
                         <tbody>
                             {% for rule in dataset %}
@@ -383,6 +397,16 @@
                                         <span class="badge" style="background-color: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.5);">{{ rule['Action'] }}</span>
                                     {% endif %}
                                 </td>
+                                <td class="text-center">
+                                    {% set doc_status = rule.get('NIST Documented', 'N/A') %}
+                                    {% if doc_status == 'Yes' %}
+                                        <span class="text-success fs-5"><i class="bi bi-check-circle"></i></span>
+                                    {% elif doc_status == 'No' %}
+                                        <span class="text-danger fs-5"><i class="bi bi-x-circle"></i></span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -394,7 +418,7 @@
             {{ render_rule_table(web_data.high_risk, 'high-risk', 'High Risk Rules (Broad Access)') }}
             {{ render_rule_table(web_data.med_risk, 'med-risk', 'Medium Risk Rules (Configuration Flags)') }}
             {{ render_rule_table(web_data.low_risk, 'low-risk', 'Low Risk Rules (Targeted & Healthy)') }}
-            
+            {{ render_rule_table(web_data.undocumented, 'nist', 'NIST 800-41 Violations (Undocumented Rules)') }}
             {{ render_rule_table(web_data.zero_hit, 'zero', 'Stale Rules (Zero Hits Recorded)') }}
             {{ render_rule_table(web_data.source_any, 'src', 'Source Address: ANY / ALL') }}
             {{ render_rule_table(web_data.dest_any, 'dst', 'Destination Address: ANY / ALL') }}

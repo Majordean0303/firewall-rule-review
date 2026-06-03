@@ -39,6 +39,14 @@ def process_palo_alto_rules(df, output_path, site_name):
     ]
     
     active_hit_df = active_df.drop(zero_hit_df.index)
+    
+    # NEW: Risky Ports Logic (Hunts for 22, 23, 3389, 445, ftp, ssh, rdp, etc.)
+    risky_pattern = r'(?i)(?:^|[-_\s])(22|23|3389|445|135|139|20|21|telnet|rdp|ssh|smb|ftp)(?:[-_\s]|$)'
+    risky_ports_df = active_hit_df[
+        active_hit_df['Service'].astype(str).str.contains(risky_pattern, regex=True, na=False) & 
+        (active_hit_df['Action'].astype(str).str.strip().str.lower() == 'allow')
+    ]
+    
     source_any_df = active_hit_df[active_hit_df['Source Address'].astype(str).str.strip().str.lower() == 'any']
     
     dest_any_df = active_hit_df[
@@ -62,11 +70,15 @@ def process_palo_alto_rules(df, output_path, site_name):
     is_srv_any = (active_df['Service'].astype(str).str.strip().str.lower().isin(['any', 'application-default'])) & (active_df['Application'].astype(str).str.strip().str.lower() == 'any') & (active_df['URL Category'].astype(str).str.strip().str.lower() == 'any')
     is_prof_none = active_df['Profile'].astype(str).str.strip().str.lower() == 'none'
     
+    # NEW: Flag risky ports as High Risk in the master calculations
+    is_risky_port = active_df['Service'].astype(str).str.contains(risky_pattern, regex=True, na=False) & (active_df['Action'].astype(str).str.strip().str.lower() == 'allow')
+    
     is_zero_hit = (active_df[hit_col].astype(str).str.strip().str.lower() == 'unused') | (active_df[hit_col] == 0) | (active_df[hit_col] == '0')
     is_log_none = ~active_df['Options'].astype(str).str.contains('Log Forwarding Profile setting', case=False, na=False)
     is_tag_none = active_df['Tags'].astype(str).str.strip().str.lower() == 'none'
     
-    high_mask = is_src_any | is_dst_any | is_srv_any | is_prof_none
+    # Included is_risky_port in the high_mask
+    high_mask = is_src_any | is_dst_any | is_srv_any | is_prof_none | is_risky_port
     med_mask = (~high_mask) & (is_zero_hit | is_log_none | is_tag_none)
     low_mask = (~high_mask) & (~med_mask)
 
@@ -76,15 +88,16 @@ def process_palo_alto_rules(df, output_path, site_name):
         'source_any': len(source_any_df), 'destination_any': len(dest_any_df),
         'service_any': len(service_any_df), 'profile_issue': len(profile_none_df),
         'logs_none': len(logs_none_df), 'tags_none': len(tags_none_df),
+        'risky_ports': len(risky_ports_df),  # NEW Metric Added
         'high_risk': int(high_mask.sum()), 'medium_risk': int(med_mask.sum()), 'low_risk': int(low_mask.sum())
     }
 
-    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df)
+    # Pass the new risky_ports_df to the Excel generator
+    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df)
 
     web_cols = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action']
     web_cols = [col for col in web_cols if col in df.columns] 
     
-    # NEW: Expanded web_data to include all dashboard metrics
     web_data = {
         'total': df[web_cols].to_dict('records'),
         'disabled': disabled_df[web_cols].to_dict('records'),
@@ -99,7 +112,8 @@ def process_palo_alto_rules(df, output_path, site_name):
         'service_any': service_any_df[web_cols].to_dict('records'),
         'profile_issue': profile_none_df[web_cols].to_dict('records'),
         'logs_none': logs_none_df[web_cols].to_dict('records'),
-        'tags_none': tags_none_df[web_cols].to_dict('records')
+        'tags_none': tags_none_df[web_cols].to_dict('records'),
+        'risky_ports': risky_ports_df[web_cols].to_dict('records') # NEW Tab Data
     }
     return metrics, web_data
 
@@ -192,7 +206,7 @@ def process_fortinet_rules(df, output_path, site_name):
 # -------------------------------------------------------------------
 # SHARED EXCEL GENERATOR
 # -------------------------------------------------------------------
-def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df):
+def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df=None):
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         dashboard_data = [
             [site_name.upper(), "", ""],
@@ -208,6 +222,8 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
             [metrics['active_hit_rules'], metrics['destination_any'], metrics['destination_any']],
             ["Active Hit Rules", "Service Any", "To be reviewed"],
             [metrics['active_hit_rules'], metrics['service_any'], metrics['service_any']],
+            ["Active Hit Rules", "Risky Mgmt Ports", "To be reviewed"], # NEW ROW
+            [metrics['active_hit_rules'], metrics.get('risky_ports', 0), metrics.get('risky_ports', 0)], # NEW ROW
             ["Active Hit Rules", "Profile Issue", ""],
             [metrics['active_hit_rules'], metrics['profile_issue'], ""],
             ["Active Hit Rules", "Logs None", ""],
@@ -223,6 +239,11 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
         active_df.to_excel(writer, sheet_name='Active Rules', index=False)
         zero_hit_df.to_excel(writer, sheet_name='Zero Hit Rules', index=False)
         active_hit_df.to_excel(writer, sheet_name='Active Hit Rules', index=False)
+        
+        # Add the Risky Ports Sheet if it exists
+        if risky_ports_df is not None:
+            risky_ports_df.to_excel(writer, sheet_name='Risky Ports', index=False)
+            
         source_any_df.to_excel(writer, sheet_name='Source Any Rules', index=False)
         dest_any_df.to_excel(writer, sheet_name='Destination Any Rules', index=False)
         service_any_df.to_excel(writer, sheet_name='Service Any Rules', index=False)
@@ -230,6 +251,7 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
         logs_none_df.to_excel(writer, sheet_name='Logs None', index=False)
         tags_none_df.to_excel(writer, sheet_name='Tags None', index=False)
 
+        # Apply Excel Styling
         workbook = writer.book
         ws = writer.sheets['Dashboard']
         header_fill = PatternFill(start_color="2A3F54", end_color="2A3F54", fill_type="solid")
@@ -241,8 +263,8 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
         ws.column_dimensions['C'].width = 25
         ws['A1'].font = Font(size=14, bold=True) 
         
-        header_rows = [2, 4, 6, 8, 10, 12, 14, 16, 18]
-        for row in range(2, 20):
+        header_rows = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20] # Updated formatting ranges
+        for row in range(2, 22):
             for col in ['A', 'B', 'C']:
                 cell = ws[f"{col}{row}"]
                 cell.alignment = center_align
@@ -250,7 +272,7 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
                 if row in header_rows:
                     cell.fill = header_fill
                     cell.font = header_font
-
+                    
 # -------------------------------------------------------------------
 # ROUTING & AUTO-DETECTION
 # -------------------------------------------------------------------

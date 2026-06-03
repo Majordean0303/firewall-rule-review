@@ -279,17 +279,45 @@ def index():
                 df = pd.read_csv(upload_path) if upload_path.endswith('.csv') else pd.read_excel(upload_path)
                 df = df.fillna('')
                 
-                if 'Source Zone' in df.columns or 'Rule Usage Hit Count' in df.columns or 'Rule Usage Rule Usage' in df.columns:
+                # 1. Vendor Auto-Detection Anchor Checks
+                is_palo = any(col in df.columns for col in ['Rule Usage Hit Count', 'Rule Usage Rule Usage', 'URL Category', 'Source Zone'])
+                is_forti = any(col in df.columns for col in ['Policy', 'Security Profiles', 'Hit Count', 'From'])
+                
+                # 2. Complete Column Validation Logic
+                if is_palo:
+                    required_pa = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'URL Category', 'Action', 'Profile', 'Options', 'Tags']
+                    missing = [col for col in required_pa if col not in df.columns]
+                    
+                    if 'Rule Usage Hit Count' not in df.columns and 'Rule Usage Rule Usage' not in df.columns:
+                        missing.append('Rule Usage Hit Count')
+                    
+                    if missing:
+                        flash(f"Palo Alto Export Error - You are missing the following required columns: {', '.join(missing)}")
+                        return redirect(request.url)
+                        
                     metrics, web_data = process_palo_alto_rules(df, output_path, site_name)
-                elif 'Policy' in df.columns or 'Hit Count' in df.columns and 'Action' in df.columns:
+
+                elif is_forti:
+                    required_ft = ['Status', 'From', 'Source', 'To', 'Destination', 'Service', 'Action', 'Security Profiles', 'Log', 'Hit Count']
+                    missing = [col for col in required_ft if col not in df.columns]
+                    
+                    if 'Name' not in df.columns and 'Policy' not in df.columns:
+                        missing.append('Name (or Policy)')
+                        
+                    if missing:
+                        flash(f"Fortinet Export Error - You are missing the following required columns: {', '.join(missing)}")
+                        return redirect(request.url)
+                        
                     metrics, web_data = process_fortinet_rules(df, output_path, site_name)
+                    
                 else:
-                    raise ValueError("Unrecognized Firewall Dump Format. Cannot detect Palo Alto or Fortinet headers.")
+                    flash("Unrecognized Format. Could not detect standard Palo Alto or Fortinet headers.")
+                    return redirect(request.url)
                 
                 return render_template('summary.html', metrics=metrics, output_filename=output_filename, site_name=site_name, web_data=web_data)
                 
             except Exception as e:
-                flash(f"Error processing file: {str(e)}")
+                flash(f"Processing Error: {str(e)}")
                 return redirect(request.url)
 
     return render_template('index.html')

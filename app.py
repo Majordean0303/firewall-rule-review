@@ -276,16 +276,31 @@ def index():
             output_path = os.path.join(OUTPUT_FOLDER, output_filename)
             
             try:
-                df = pd.read_csv(upload_path) if upload_path.endswith('.csv') else pd.read_excel(upload_path)
+                # ---------------------------------------------------------
+                # NEW DATA INGESTION ENGINE
+                # ---------------------------------------------------------
+                if upload_path.endswith('.txt'):
+                    # 1. If it's a PuTTY dump, run our new Python Stack Parser
+                    from cli_parser import PaloAltoCLIParser
+                    with open(upload_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        raw_text = f.read()
+                    
+                    cli_engine = PaloAltoCLIParser(raw_text)
+                    df = cli_engine.parse()
+                else:
+                    # 2. If it's a spreadsheet, use the classic Pandas engine
+                    df = pd.read_csv(upload_path) if upload_path.endswith('.csv') else pd.read_excel(upload_path)
+                
                 df = df.fillna('')
                 
-                # 1. Vendor Auto-Detection Anchor Checks
-                is_palo = any(col in df.columns for col in ['Rule Usage Hit Count', 'Rule Usage Rule Usage', 'URL Category', 'Source Zone'])
+                # ---------------------------------------------------------
+                # VENDOR VALIDATION & PROCESSING (Unchanged)
+                # ---------------------------------------------------------
+                is_palo = any(col in df.columns for col in ['Rule Usage Hit Count', 'Rule Usage Rule Usage', 'URL Category', 'Source Zone', 'Last Hit Date'])
                 is_forti = any(col in df.columns for col in ['Policy', 'Security Profiles', 'Hit Count', 'From'])
                 
-                # 2. Complete Column Validation Logic
                 if is_palo:
-                    required_pa = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'URL Category', 'Action', 'Profile', 'Options', 'Tags']
+                    required_pa = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action', 'Profile', 'Options', 'Tags']
                     missing = [col for col in required_pa if col not in df.columns]
                     
                     if 'Rule Usage Hit Count' not in df.columns and 'Rule Usage Rule Usage' not in df.columns:

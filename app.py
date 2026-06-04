@@ -46,7 +46,7 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None):
         (active_hit_df['Action'].astype(str).str.strip().str.lower() == 'allow')
     ]
     
-    # NEW: Filter for Undocumented Rules (NIST Check)
+    # Extract Undocumented Rules (NIST Check)
     if 'NIST Documented' in active_hit_df.columns:
         undocumented_df = active_hit_df[active_hit_df['NIST Documented'].astype(str).str.strip().str.lower() == 'no']
     else:
@@ -89,13 +89,13 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None):
         'service_any': len(service_any_df), 'profile_issue': len(profile_none_df),
         'logs_none': len(logs_none_df), 'tags_none': len(tags_none_df),
         'risky_ports': len(risky_ports_df),
-        'undocumented_rules': len(undocumented_df), # NEW Metric
+        'undocumented_rules': len(undocumented_df),
         'high_risk': int(high_mask.sum()), 'medium_risk': int(med_mask.sum()), 'low_risk': int(low_mask.sum())
     }
 
-    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df)
+    # BUGFIX: We are now explicitly passing undocumented_df AND nist_metrics to the Excel generator!
+    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df, undocumented_df, nist_metrics)
 
-    # NEW: Ensure 'NIST Documented' is included in the web tables if available
     web_cols = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action', 'NIST Documented']
     web_cols = [col for col in web_cols if col in df.columns] 
     
@@ -115,10 +115,11 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None):
         'logs_none': logs_none_df[web_cols].to_dict('records'),
         'tags_none': tags_none_df[web_cols].to_dict('records'),
         'risky_ports': risky_ports_df[web_cols].to_dict('records'),
-        'undocumented': undocumented_df[web_cols].to_dict('records') if not undocumented_df.empty else [], # NEW Tab Data
-        'nist': nist_metrics or {} # NEW: Passes the raw NIST dictionary to HTML
+        'undocumented': undocumented_df[web_cols].to_dict('records') if not undocumented_df.empty else [],
+        'nist': nist_metrics or {}
     }
     return metrics, web_data
+
 # -------------------------------------------------------------------
 # ENGINE 2: FORTINET PROCESSOR
 # -------------------------------------------------------------------
@@ -208,43 +209,66 @@ def process_fortinet_rules(df, output_path, site_name):
 # -------------------------------------------------------------------
 # SHARED EXCEL GENERATOR
 # -------------------------------------------------------------------
-def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df=None):
+def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df=None, undocumented_df=None, nist_metrics=None):
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+        
+        # Build Standard Dashboard Data
         dashboard_data = [
             [site_name.upper(), "", ""],
             ["Total Rules", "Disabled Rules", "Active Rules"],
-            [metrics['total_rules'], metrics['disabled_rules'], metrics['active_rules']],
+            [metrics.get('total_rules', 0), metrics.get('disabled_rules', 0), metrics.get('active_rules', 0)],
             ["High Risk", "Medium Risk", "Low Risk"],
-            [metrics['high_risk'], metrics['medium_risk'], metrics['low_risk']],
+            [metrics.get('high_risk', 0), metrics.get('medium_risk', 0), metrics.get('low_risk', 0)],
             ["Active Rules", "Zero Hit Review", "Active Hit Rules"],
-            [metrics['active_rules'], metrics['zero_hit_rules'], metrics['active_hit_rules']],
+            [metrics.get('active_rules', 0), metrics.get('zero_hit_rules', 0), metrics.get('active_hit_rules', 0)],
             ["Active Hit Rules", "Source Any", "To be reviewed"],
-            [metrics['active_hit_rules'], metrics['source_any'], metrics['source_any']],
+            [metrics.get('active_hit_rules', 0), metrics.get('source_any', 0), metrics.get('source_any', 0)],
             ["Active Hit Rules", "Destination Any", "To be reviewed"],
-            [metrics['active_hit_rules'], metrics['destination_any'], metrics['destination_any']],
+            [metrics.get('active_hit_rules', 0), metrics.get('destination_any', 0), metrics.get('destination_any', 0)],
             ["Active Hit Rules", "Service Any", "To be reviewed"],
-            [metrics['active_hit_rules'], metrics['service_any'], metrics['service_any']],
-            ["Active Hit Rules", "Risky Mgmt Ports", "To be reviewed"], # NEW ROW
-            [metrics['active_hit_rules'], metrics.get('risky_ports', 0), metrics.get('risky_ports', 0)], # NEW ROW
+            [metrics.get('active_hit_rules', 0), metrics.get('service_any', 0), metrics.get('service_any', 0)],
+            ["Active Hit Rules", "Risky Mgmt Ports", "To be reviewed"],
+            [metrics.get('active_hit_rules', 0), metrics.get('risky_ports', 0), metrics.get('risky_ports', 0)],
+            ["Active Hit Rules", "NIST Violations (Undoc)", "To be reviewed"],
+            [metrics.get('active_hit_rules', 0), metrics.get('undocumented_rules', 0), metrics.get('undocumented_rules', 0)],
             ["Active Hit Rules", "Profile Issue", ""],
-            [metrics['active_hit_rules'], metrics['profile_issue'], ""],
+            [metrics.get('active_hit_rules', 0), metrics.get('profile_issue', 0), ""],
             ["Active Hit Rules", "Logs None", ""],
-            [metrics['active_hit_rules'], metrics['logs_none'], ""],
+            [metrics.get('active_hit_rules', 0), metrics.get('logs_none', 0), ""],
             ["Active Hit Rules", "Tags None", ""],
-            [metrics['active_hit_rules'], metrics['tags_none'], ""]
+            [metrics.get('active_hit_rules', 0), metrics.get('tags_none', 0), ""]
         ]
+
+        # NEW: Append NIST Telemetry to the bottom of the Excel Dashboard if it exists
+        if nist_metrics:
+            dashboard_data.extend([
+                ["", "", ""],
+                ["NIST 800-41 TELEMETRY", "", ""],
+                ["Firmware Version", nist_metrics.get('sw_version', 'N/A'), ""],
+                ["Default Deny Enforced", "Yes" if nist_metrics.get('default_deny_enforced') else "No", ""]
+            ])
+            insecure = nist_metrics.get('insecure_mgt_profiles', [])
+            if insecure:
+                dashboard_data.append(["Insecure Mgmt Profiles", ", ".join(insecure), ""])
+            else:
+                dashboard_data.append(["Insecure Mgmt Profiles", "None (Secured)", ""])
+
         dashboard_df = pd.DataFrame(dashboard_data)
         dashboard_df.to_excel(writer, sheet_name='Dashboard', index=False, header=False)
         
+        # Write Standard Sheets
         df.to_excel(writer, sheet_name='Master Sheet', index=False)
         disabled_df.to_excel(writer, sheet_name='Disabled Rules', index=False)
         active_df.to_excel(writer, sheet_name='Active Rules', index=False)
         zero_hit_df.to_excel(writer, sheet_name='Zero Hit Rules', index=False)
         active_hit_df.to_excel(writer, sheet_name='Active Hit Rules', index=False)
         
-        # Add the Risky Ports Sheet if it exists
         if risky_ports_df is not None:
             risky_ports_df.to_excel(writer, sheet_name='Risky Ports', index=False)
+            
+        # NEW: Write the NIST Violations sheet
+        if undocumented_df is not None:
+            undocumented_df.to_excel(writer, sheet_name='NIST Violations', index=False)
             
         source_any_df.to_excel(writer, sheet_name='Source Any Rules', index=False)
         dest_any_df.to_excel(writer, sheet_name='Destination Any Rules', index=False)
@@ -253,28 +277,39 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
         logs_none_df.to_excel(writer, sheet_name='Logs None', index=False)
         tags_none_df.to_excel(writer, sheet_name='Tags None', index=False)
 
-        # Apply Excel Styling
+        # Apply Dynamic Excel Styling
         workbook = writer.book
         ws = writer.sheets['Dashboard']
         header_fill = PatternFill(start_color="2A3F54", end_color="2A3F54", fill_type="solid")
         header_font = Font(color="FFFFFF", bold=True)
         center_align = Alignment(horizontal="center", vertical="center")
         thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-        ws.column_dimensions['A'].width = 25
-        ws.column_dimensions['B'].width = 25
-        ws.column_dimensions['C'].width = 25
+        
+        ws.column_dimensions['A'].width = 30
+        ws.column_dimensions['B'].width = 30
+        ws.column_dimensions['C'].width = 30
         ws['A1'].font = Font(size=14, bold=True) 
         
-        header_rows = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20] # Updated formatting ranges
-        for row in range(2, 22):
-            for col in ['A', 'B', 'C']:
-                cell = ws[f"{col}{row}"]
+        # Dynamically color the rows so we don't have to hardcode header numbers!
+        for row_idx, row_data in enumerate(dashboard_data, start=1):
+            if row_data[0] == "": # Skip spacing rows
+                continue
+                
+            for col_idx, col_letter in enumerate(['A', 'B', 'C']):
+                cell = ws[f"{col_letter}{row_idx}"]
                 cell.alignment = center_align
-                cell.border = thin_border
-                if row in header_rows:
-                    cell.fill = header_fill
-                    cell.font = header_font
-
+                if row_idx > 1: # Don't put a tight border on the Site Name
+                    cell.border = thin_border
+                    
+            # Color header rows (even rows up to 22, plus the NIST title)
+            is_standard_header = (row_idx % 2 == 0 and row_idx <= 22)
+            is_nist_title = (row_data[0] == "NIST 800-41 TELEMETRY")
+            
+            if is_standard_header or is_nist_title:
+                for col_letter in ['A', 'B', 'C']:
+                    ws[f"{col_letter}{row_idx}"].fill = header_fill
+                    ws[f"{col_letter}{row_idx}"].font = header_font
+                    
 # -------------------------------------------------------------------
 # ROUTING & AUTO-DETECTION
 # -------------------------------------------------------------------

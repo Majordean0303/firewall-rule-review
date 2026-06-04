@@ -28,7 +28,7 @@ def system_restart():
 # -------------------------------------------------------------------
 # ENGINE 1: PALO ALTO PROCESSOR
 # -------------------------------------------------------------------
-def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None):
+def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_metrics=None):
     disabled_df = df[df['Name'].astype(str).str.contains('Disabled', case=False, na=False)]
     active_df = df[~df['Name'].astype(str).str.contains('Disabled', case=False, na=False)]
     
@@ -94,8 +94,7 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None):
     }
 
     # BUGFIX: We are now explicitly passing undocumented_df AND nist_metrics to the Excel generator!
-    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df, undocumented_df, nist_metrics)
-
+    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df, undocumented_df, nist_metrics, cis_metrics)
     web_cols = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action', 'NIST Documented']
     web_cols = [col for col in web_cols if col in df.columns] 
     
@@ -116,7 +115,8 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None):
         'tags_none': tags_none_df[web_cols].to_dict('records'),
         'risky_ports': risky_ports_df[web_cols].to_dict('records'),
         'undocumented': undocumented_df[web_cols].to_dict('records') if not undocumented_df.empty else [],
-        'nist': nist_metrics or {}
+        'nist': nist_metrics or {},
+        'cis': cis_metrics or {}
     }
     return metrics, web_data
 
@@ -209,7 +209,7 @@ def process_fortinet_rules(df, output_path, site_name):
 # -------------------------------------------------------------------
 # SHARED EXCEL GENERATOR
 # -------------------------------------------------------------------
-def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df=None, undocumented_df=None, nist_metrics=None):
+def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df=None, undocumented_df=None, nist_metrics=None, cis_metrics=None):
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         
         # Build Standard Dashboard Data
@@ -252,6 +252,14 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
                 dashboard_data.append(["Insecure Mgmt Profiles", ", ".join(insecure), ""])
             else:
                 dashboard_data.append(["Insecure Mgmt Profiles", "None (Secured)", ""])
+        # NEW: Write CIS Data to Excel Dashboard
+        if cis_metrics:
+            dashboard_data.extend([
+                ["", "", ""],
+                ["CIS PAN-OS BENCHMARKS", "", ""]
+            ])
+            for key, data in cis_metrics.items():
+                dashboard_data.append([data['desc'], data['status'], data['value']])
 
         dashboard_df = pd.DataFrame(dashboard_data)
         dashboard_df.to_excel(writer, sheet_name='Dashboard', index=False, header=False)
@@ -309,7 +317,7 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
                 for col_letter in ['A', 'B', 'C']:
                     ws[f"{col_letter}{row_idx}"].fill = header_fill
                     ws[f"{col_letter}{row_idx}"].font = header_font
-                    
+
 # -------------------------------------------------------------------
 # ROUTING & AUTO-DETECTION
 # -------------------------------------------------------------------
@@ -338,7 +346,8 @@ def index():
                 # ---------------------------------------------------------
                 # NEW DATA INGESTION ENGINE
                 # ---------------------------------------------------------
-                nist_metrics = None # Initialize empty for CSVs
+                nist_metrics = None
+                cis_metrics = None # NEW initialization
                 
                 if upload_path.endswith('.txt'):
                     from cli_parser import PaloAltoCLIParser
@@ -346,11 +355,11 @@ def index():
                         raw_text = f.read()
                     
                     cli_engine = PaloAltoCLIParser(raw_text)
-                    # BUGFIX: Catch both the Dataframe AND the new NIST dictionary
-                    df, nist_metrics = cli_engine.parse() 
+                    # Unpack the 3 variables now!
+                    df, nist_metrics, cis_metrics = cli_engine.parse() 
                 else:
                     df = pd.read_csv(upload_path) if upload_path.endswith('.csv') else pd.read_excel(upload_path)
-                
+
                 df = df.fillna('')
                 
                 # ---------------------------------------------------------
@@ -370,8 +379,9 @@ def index():
                         flash(f"Palo Alto Export Error - You are missing the following required columns: {', '.join(missing)}")
                         return redirect(request.url)
                         
-                    metrics, web_data = process_palo_alto_rules(df, output_path, site_name, nist_metrics=nist_metrics)
-
+                    # Hand both metrics off to the processor!
+                    metrics, web_data = process_palo_alto_rules(df, output_path, site_name, nist_metrics=nist_metrics, cis_metrics=cis_metrics)
+                    
                 elif is_forti:
                     required_ft = ['Status', 'From', 'Source', 'To', 'Destination', 'Service', 'Action', 'Security Profiles', 'Log', 'Hit Count']
                     missing = [col for col in required_ft if col not in df.columns]

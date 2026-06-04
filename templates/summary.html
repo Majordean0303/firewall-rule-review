@@ -520,7 +520,28 @@
                 </div>
             </div>
         {% endif %}
-
+        {% if web_data.cis %}
+        <div class="info-banner mb-4" style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(16, 185, 129, 0.05));">
+            <div class="card-header bg-transparent border-0 fw-bold px-4 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                <div><i class="bi bi-shield-lock me-2 text-primary"></i> CIS PAN-OS Benchmarks</div>
+                <span class="badge" style="background: rgba(37, 99, 235, 0.15); color: var(--primary-accent); border: 1px solid rgba(37, 99, 235, 0.3);">GUI Config Mode Pending</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap gap-4">
+                    {% for key, metric in web_data.cis.items() %}
+                    <div class="flex-fill border-end pe-3" style="border-color: var(--surface-border) !important; min-width: 180px;">
+                        <h6 class="text-muted small text-uppercase mb-1">{{ metric.desc }}</h6>
+                        {% if metric.status == 'Pass' %}
+                            <span class="fs-6 fw-bold text-success"><i class="bi bi-check-circle-fill me-1"></i> {{ metric.value }}</span>
+                        {% else %}
+                            <span class="fs-6 fw-bold text-danger"><i class="bi bi-x-circle-fill me-1"></i> {{ metric.value }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
         <div class="tab-content" id="reviewTabsContent">
 
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">

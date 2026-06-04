@@ -356,6 +356,31 @@
                 top: 0.35rem;
             }
         }
+        /* ----------------------------------------- */
+        /* LIGHT THEME TABLE OVERRIDES               */
+        /* ----------------------------------------- */
+        [data-bs-theme="light"] .table-dark {
+            --bs-table-bg: transparent !important;
+            --bs-table-color: var(--text-main) !important;
+            --bs-table-border-color: var(--surface-border) !important;
+        }
+        
+        /* Strip Bootstrap's aggressive dark cell shading */
+        [data-bs-theme="light"] .table > tbody > tr > td,
+        [data-bs-theme="light"] .table > tbody > tr > th {
+            background-color: transparent !important;
+            color: var(--text-main) !important;
+            box-shadow: none !important; 
+        }
+        
+        /* Re-apply soft background and hover effects for DataTables */
+        [data-bs-theme="light"] table.dataTable > tbody > tr {
+            background-color: var(--surface-soft) !important;
+        }
+        
+        [data-bs-theme="light"] table.dataTable > tbody > tr:hover > td {
+            background-color: rgba(56, 189, 248, 0.08) !important;
+        }
     </style>
 </head>
 <body>
@@ -819,6 +844,7 @@
                 firstDataTable.columns.adjust();
             }
         });
+        
     </script>
 </body>
 </html>

@@ -5,3 +5,4 @@ __pycache__/
 features.txt
 linkedin/
 testing_subjects/
+.vscode/

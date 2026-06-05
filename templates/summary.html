@@ -496,6 +496,11 @@
                     <li><a class="dropdown-item d-flex justify-content-between" id="profile-tab" href="javascript:void(0);" onclick="switchTab('profile')">Profile Issues <span class="text-muted ms-3">{{ metrics.profile_issue }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="logs-tab" href="javascript:void(0);" onclick="switchTab('logs')">Logging Issues <span class="text-muted ms-3">{{ metrics.logs_none }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="tags-tab" href="javascript:void(0);" onclick="switchTab('tags')">Tagging Issues <span class="text-muted ms-3">{{ metrics.tags_none }}</span></a></li>
+                    <li><hr class="dropdown-divider border-secondary"></li>
+                    <li><h6 class="dropdown-header text-uppercase" style="letter-spacing: 1px;">Advanced Analytics</h6></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="cleartext-tab" href="javascript:void(0);" onclick="switchTab('cleartext')">Cleartext Protocols <span class="text-muted ms-3">{{ metrics.cleartext_ports }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="admin-tab" href="javascript:void(0);" onclick="switchTab('admin')">Admin Ports <span class="text-muted ms-3">{{ metrics.admin_ports }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="bidir-tab" href="javascript:void(0);" onclick="switchTab('bidir')">Bi-Directional Rules <span class="text-muted ms-3">{{ metrics.bidirectional_rules }}</span></a></li>
                 </ul>
             </li>
         </ul>
@@ -754,6 +759,11 @@
             {{ render_rule_table(web_data.profile_issue, 'profile', 'Missing Security Profiles') }}
             {{ render_rule_table(web_data.logs_none, 'logs', 'Logging Disabled or Incomplete') }}
             {{ render_rule_table(web_data.tags_none, 'tags', 'Missing Rule Tags') }}
+
+            {{ render_rule_table(web_data.cleartext_ports, 'cleartext', 'Cleartext / Insecure Protocols') }}
+            {{ render_rule_table(web_data.admin_ports, 'admin', 'Administrative Ports') }}
+            
+            {{ render_rule_table(web_data.bidirectional, 'bidir', 'Stateful Duplicates (Bi-Directional)') }}
         </div>
     </div>
 

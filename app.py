@@ -40,13 +40,50 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_m
     
     active_hit_df = active_df.drop(zero_hit_df.index)
     
-    risky_pattern = r'(?i)(?:^|[-_\s])(22|23|3389|445|135|139|20|21|telnet|rdp|ssh|smb|ftp)(?:[-_\s]|$)'
-    risky_ports_df = active_hit_df[
-        active_hit_df['Service'].astype(str).str.contains(risky_pattern, regex=True, na=False) & 
-        (active_hit_df['Action'].astype(str).str.strip().str.lower() == 'allow')
+    # ---------------------------------------------------------
+    # PHASE 1: SPLIT PROTOCOL FLAGGING (CSV Compatible)
+    # ---------------------------------------------------------
+    admin_pattern = r'(?i)(?:^|[-_\s])(?:22|3389|rdp|ssh)(?:[-_\s]|$)'
+    cleartext_pattern = r'(?i)(?:^|[-_\s])(?:21|23|80|ftp|telnet|http)(?:[-_\s]|$)'
+    
+    admin_ports_df = active_hit_df[
+        active_hit_df['Service'].astype(str).str.contains(admin_pattern, regex=True, na=False) & 
+        (active_hit_df['Action'].astype(str).str.strip().str.lower().isin(['allow', 'accept']))
     ]
     
-    # Extract Undocumented Rules (NIST Check)
+    cleartext_ports_df = active_hit_df[
+        active_hit_df['Service'].astype(str).str.contains(cleartext_pattern, regex=True, na=False) & 
+        (active_hit_df['Action'].astype(str).str.strip().str.lower().isin(['allow', 'accept']))
+    ]
+
+    # ---------------------------------------------------------
+    # PHASE 2: BI-DIRECTIONAL & ZERO HIT CHECK (CSV Compatible)
+    # ---------------------------------------------------------
+    # 1. Search across ALL active rules, but exclude 'any' IPs and 'deny/drop' rules
+    valid_bidir = active_df[
+        (~active_df['Source Address'].astype(str).str.strip().str.lower().isin(['any', ''])) &
+        (~active_df['Destination Address'].astype(str).str.strip().str.lower().isin(['any', ''])) &
+        (active_df['Action'].astype(str).str.strip().str.lower().isin(['allow', 'accept'])) # NEW: Only check allow rules!
+    ]
+    
+    # 2. Self-Merge the dataframe where Rule A Src == Rule B Dst AND Rule A Dst == Rule B Src
+    merged_bidir = pd.merge(
+        valid_bidir, valid_bidir, 
+        left_on=['Source Address', 'Destination Address', 'Service'], 
+        right_on=['Destination Address', 'Source Address', 'Service'], 
+        suffixes=('_A', '_B')
+    )
+    
+    # 3. Filter out rows matching against themselves, and extract unique rule names
+    merged_bidir = merged_bidir[merged_bidir['Name_A'] != merged_bidir['Name_B']]
+    bidirectional_names = merged_bidir['Name_A'].unique()
+    
+    # 4. Only flag the mirrored rule if it ALSO has Zero Hits!
+    bidirectional_df = zero_hit_df[zero_hit_df['Name'].isin(bidirectional_names)]
+    
+    # ---------------------------------------------------------
+    # EXISTING COMPLIANCE CHECKS
+    # ---------------------------------------------------------
     if 'NIST Documented' in active_hit_df.columns:
         undocumented_df = active_hit_df[active_hit_df['NIST Documented'].astype(str).str.strip().str.lower() == 'no']
     else:
@@ -72,14 +109,17 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_m
     is_dst_any = (active_df['Destination Address'].astype(str).str.strip().str.lower() == 'any') & (active_df['Application'].astype(str).str.strip().str.lower() == 'any') & (active_df['URL Category'].astype(str).str.strip().str.lower() == 'any')
     is_srv_any = (active_df['Service'].astype(str).str.strip().str.lower().isin(['any', 'application-default'])) & (active_df['Application'].astype(str).str.strip().str.lower() == 'any') & (active_df['URL Category'].astype(str).str.strip().str.lower() == 'any')
     is_prof_none = active_df['Profile'].astype(str).str.strip().str.lower() == 'none'
-    is_risky_port = active_df['Service'].astype(str).str.contains(risky_pattern, regex=True, na=False) & (active_df['Action'].astype(str).str.strip().str.lower() == 'allow')
+    
+    # Flag Cleartext as High Risk, Admin Ports as Medium Risk
+    is_cleartext = active_df['Service'].astype(str).str.contains(cleartext_pattern, regex=True, na=False) & (active_df['Action'].astype(str).str.strip().str.lower().isin(['allow', 'accept']))
+    is_admin = active_df['Service'].astype(str).str.contains(admin_pattern, regex=True, na=False) & (active_df['Action'].astype(str).str.strip().str.lower().isin(['allow', 'accept']))
     
     is_zero_hit = (active_df[hit_col].astype(str).str.strip().str.lower() == 'unused') | (active_df[hit_col] == 0) | (active_df[hit_col] == '0')
     is_log_none = ~active_df['Options'].astype(str).str.contains('Log Forwarding Profile setting', case=False, na=False)
     is_tag_none = active_df['Tags'].astype(str).str.strip().str.lower() == 'none'
     
-    high_mask = is_src_any | is_dst_any | is_srv_any | is_prof_none | is_risky_port
-    med_mask = (~high_mask) & (is_zero_hit | is_log_none | is_tag_none)
+    high_mask = is_src_any | is_dst_any | is_srv_any | is_prof_none | is_cleartext
+    med_mask = (~high_mask) & (is_zero_hit | is_log_none | is_tag_none | is_admin)
     low_mask = (~high_mask) & (~med_mask)
 
     metrics = {
@@ -88,13 +128,15 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_m
         'source_any': len(source_any_df), 'destination_any': len(dest_any_df),
         'service_any': len(service_any_df), 'profile_issue': len(profile_none_df),
         'logs_none': len(logs_none_df), 'tags_none': len(tags_none_df),
-        'risky_ports': len(risky_ports_df),
+        'admin_ports': len(admin_ports_df),
+        'cleartext_ports': len(cleartext_ports_df),
+        'bidirectional_rules': len(bidirectional_df),
         'undocumented_rules': len(undocumented_df),
         'high_risk': int(high_mask.sum()), 'medium_risk': int(med_mask.sum()), 'low_risk': int(low_mask.sum())
     }
 
-    # BUGFIX: We are now explicitly passing undocumented_df AND nist_metrics to the Excel generator!
-    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df, undocumented_df, nist_metrics, cis_metrics)
+    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, admin_ports_df, cleartext_ports_df, bidirectional_df, undocumented_df, nist_metrics, cis_metrics)
+
     web_cols = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action', 'NIST Documented']
     web_cols = [col for col in web_cols if col in df.columns] 
     
@@ -113,13 +155,14 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_m
         'profile_issue': profile_none_df[web_cols].to_dict('records'),
         'logs_none': logs_none_df[web_cols].to_dict('records'),
         'tags_none': tags_none_df[web_cols].to_dict('records'),
-        'risky_ports': risky_ports_df[web_cols].to_dict('records'),
+        'admin_ports': admin_ports_df[web_cols].to_dict('records'),
+        'cleartext_ports': cleartext_ports_df[web_cols].to_dict('records'),
+        'bidirectional': bidirectional_df[web_cols].to_dict('records'),
         'undocumented': undocumented_df[web_cols].to_dict('records') if not undocumented_df.empty else [],
         'nist': nist_metrics or {},
         'cis': cis_metrics or {}
     }
     return metrics, web_data
-
 # -------------------------------------------------------------------
 # ENGINE 2: FORTINET PROCESSOR
 # -------------------------------------------------------------------
@@ -206,10 +249,11 @@ def process_fortinet_rules(df, output_path, site_name):
     }
     return metrics, web_data
 
+
 # -------------------------------------------------------------------
 # SHARED EXCEL GENERATOR
 # -------------------------------------------------------------------
-def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, risky_ports_df=None, undocumented_df=None, nist_metrics=None, cis_metrics=None):
+def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, admin_ports_df=None, cleartext_ports_df=None, bidirectional_df=None, undocumented_df=None, nist_metrics=None, cis_metrics=None):
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         
         # Build Standard Dashboard Data
@@ -227,8 +271,15 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
             [metrics.get('active_hit_rules', 0), metrics.get('destination_any', 0), metrics.get('destination_any', 0)],
             ["Active Hit Rules", "Service Any", "To be reviewed"],
             [metrics.get('active_hit_rules', 0), metrics.get('service_any', 0), metrics.get('service_any', 0)],
-            ["Active Hit Rules", "Risky Mgmt Ports", "To be reviewed"],
-            [metrics.get('active_hit_rules', 0), metrics.get('risky_ports', 0), metrics.get('risky_ports', 0)],
+            
+            # Phase 1 & 2 Dashboard Inserts
+            ["Active Hit Rules", "Cleartext Protocols", "To be reviewed"],
+            [metrics.get('active_hit_rules', 0), metrics.get('cleartext_ports', 0), metrics.get('cleartext_ports', 0)],
+            ["Active Hit Rules", "Admin Mgmt Ports", "To be reviewed"],
+            [metrics.get('active_hit_rules', 0), metrics.get('admin_ports', 0), metrics.get('admin_ports', 0)],
+            ["Active Hit Rules", "Bi-Directional Duplicates", "To be reviewed"],
+            [metrics.get('active_hit_rules', 0), metrics.get('bidirectional_rules', 0), metrics.get('bidirectional_rules', 0)],
+            
             ["Active Hit Rules", "NIST Violations (Undoc)", "To be reviewed"],
             [metrics.get('active_hit_rules', 0), metrics.get('undocumented_rules', 0), metrics.get('undocumented_rules', 0)],
             ["Active Hit Rules", "Profile Issue", ""],
@@ -239,7 +290,6 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
             [metrics.get('active_hit_rules', 0), metrics.get('tags_none', 0), ""]
         ]
 
-        # NEW: Append NIST Telemetry to the bottom of the Excel Dashboard if it exists
         if nist_metrics:
             dashboard_data.extend([
                 ["", "", ""],
@@ -252,7 +302,7 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
                 dashboard_data.append(["Insecure Mgmt Profiles", ", ".join(insecure), ""])
             else:
                 dashboard_data.append(["Insecure Mgmt Profiles", "None (Secured)", ""])
-        # NEW: Write CIS Data to Excel Dashboard
+
         if cis_metrics:
             dashboard_data.extend([
                 ["", "", ""],
@@ -271,12 +321,11 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
         zero_hit_df.to_excel(writer, sheet_name='Zero Hit Rules', index=False)
         active_hit_df.to_excel(writer, sheet_name='Active Hit Rules', index=False)
         
-        if risky_ports_df is not None:
-            risky_ports_df.to_excel(writer, sheet_name='Risky Ports', index=False)
-            
-        # NEW: Write the NIST Violations sheet
-        if undocumented_df is not None:
-            undocumented_df.to_excel(writer, sheet_name='NIST Violations', index=False)
+        # Write Phase 1 & 2 Sheets
+        if admin_ports_df is not None: admin_ports_df.to_excel(writer, sheet_name='Admin Ports', index=False)
+        if cleartext_ports_df is not None: cleartext_ports_df.to_excel(writer, sheet_name='Cleartext Protocols', index=False)
+        if bidirectional_df is not None: bidirectional_df.to_excel(writer, sheet_name='Bi-Directional Duplicates', index=False)
+        if undocumented_df is not None: undocumented_df.to_excel(writer, sheet_name='NIST Violations', index=False)
             
         source_any_df.to_excel(writer, sheet_name='Source Any Rules', index=False)
         dest_any_df.to_excel(writer, sheet_name='Destination Any Rules', index=False)
@@ -284,7 +333,8 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
         profile_none_df.to_excel(writer, sheet_name='Profile None', index=False)
         logs_none_df.to_excel(writer, sheet_name='Logs None', index=False)
         tags_none_df.to_excel(writer, sheet_name='Tags None', index=False)
-
+        
+        # ... [Leave the rest of the dynamic Excel formatting block exactly as it is]
         # Apply Dynamic Excel Styling
         workbook = writer.book
         ws = writer.sheets['Dashboard']

@@ -501,6 +501,7 @@
                     <li><a class="dropdown-item d-flex justify-content-between" id="cleartext-tab" href="javascript:void(0);" onclick="switchTab('cleartext')">Cleartext Protocols <span class="text-muted ms-3">{{ metrics.cleartext_ports }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="admin-tab" href="javascript:void(0);" onclick="switchTab('admin')">Admin Ports <span class="text-muted ms-3">{{ metrics.admin_ports }}</span></a></li>
                     <li><a class="dropdown-item d-flex justify-content-between" id="bidir-tab" href="javascript:void(0);" onclick="switchTab('bidir')">Bi-Directional Rules <span class="text-muted ms-3">{{ metrics.bidirectional_rules }}</span></a></li>
+                    <li><a class="dropdown-item d-flex justify-content-between" id="shadowed-tab" href="javascript:void(0);" onclick="switchTab('shadowed')"><span class="text-info">Shadowed Rules (Phase 3)</span> <span class="text-muted ms-3">{{ metrics.shadowed_rules }}</span></a></li>
                 </ul>
             </li>
         </ul>
@@ -764,6 +765,7 @@
             {{ render_rule_table(web_data.admin_ports, 'admin', 'Administrative Ports') }}
             
             {{ render_rule_table(web_data.bidirectional, 'bidir', 'Stateful Duplicates (Bi-Directional)') }}
+            {{ render_rule_table(web_data.shadowed, 'shadowed', 'Shadowed Rules (Phase 3 Analytics)') }}
         </div>
     </div>
 

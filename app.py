@@ -3,6 +3,7 @@ import uuid
 import pandas as pd
 import threading
 import time
+import ipaddress
 from flask import Flask, request, render_template, send_file, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -24,6 +25,58 @@ def system_restart():
         os._exit(0)
     threading.Thread(target=kill_app).start()
     return "Application is restarting to apply new code...", 200
+
+# -------------------------------------------------------------------
+# SHADOWED RULES DETECTION ENGINE (Phase 3 Analytics)
+# -------------------------------------------------------------------
+def detect_shadowed_rules(df, address_column):
+    """
+    Detects shadowed rules using subnet math (ipaddress library).
+    A rule is shadowed if its IP/subnet is covered by a higher-priority rule.
+    Gracefully handles non-IP values (e.g., object names) by catching ValueError.
+    Returns a DataFrame of shadowed rules.
+    """
+    if address_column not in df.columns:
+        return pd.DataFrame(columns=df.columns)
+    
+    shadowed_indices = []
+    
+    for i in range(len(df)):
+        current_addr = str(df.iloc[i][address_column]).strip()
+        
+        # Skip empty or 'any' addresses
+        if not current_addr or current_addr.lower() in ['any', '']:
+            continue
+        
+        try:
+            # Try to parse current rule's address as network/IP
+            current_net = ipaddress.ip_network(current_addr, strict=False)
+        except (ValueError, ipaddress.AddressValueError, ipaddress.NetmaskValueError):
+            # Not an IP/subnet, skip
+            continue
+        
+        # Check all higher-priority rules (rules above current rule)
+        is_shadowed = False
+        for j in range(i):
+            higher_addr = str(df.iloc[j][address_column]).strip()
+            
+            if not higher_addr or higher_addr.lower() in ['any', '']:
+                continue
+            
+            try:
+                higher_net = ipaddress.ip_network(higher_addr, strict=False)
+                # If current rule's subnet is within higher rule's subnet, it's shadowed
+                if current_net.subnet_of(higher_net):
+                    is_shadowed = True
+                    break
+            except (ValueError, ipaddress.AddressValueError, ipaddress.NetmaskValueError):
+                # Not an IP/subnet, skip
+                continue
+        
+        if is_shadowed:
+            shadowed_indices.append(i)
+    
+    return df.iloc[shadowed_indices].copy() if shadowed_indices else pd.DataFrame(columns=df.columns)
 
 # -------------------------------------------------------------------
 # ENGINE 1: PALO ALTO PROCESSOR
@@ -82,6 +135,13 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_m
     bidirectional_df = zero_hit_df[zero_hit_df['Name'].isin(bidirectional_names)]
     
     # ---------------------------------------------------------
+    # PHASE 3: SHADOWED RULES DETECTION (Phase 3 Analytics)
+    # ---------------------------------------------------------
+    shadowed_src_df = detect_shadowed_rules(active_df, 'Source Address')
+    shadowed_dst_df = detect_shadowed_rules(active_df, 'Destination Address')
+    shadowed_df = pd.concat([shadowed_src_df, shadowed_dst_df]).drop_duplicates(subset=['Name'], keep='first')
+    
+    # ---------------------------------------------------------
     # EXISTING COMPLIANCE CHECKS
     # ---------------------------------------------------------
     if 'NIST Documented' in active_hit_df.columns:
@@ -132,10 +192,11 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_m
         'cleartext_ports': len(cleartext_ports_df),
         'bidirectional_rules': len(bidirectional_df),
         'undocumented_rules': len(undocumented_df),
+        'shadowed_rules': len(shadowed_df),
         'high_risk': int(high_mask.sum()), 'medium_risk': int(med_mask.sum()), 'low_risk': int(low_mask.sum())
     }
 
-    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, admin_ports_df, cleartext_ports_df, bidirectional_df, undocumented_df, nist_metrics, cis_metrics)
+    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, admin_ports_df, cleartext_ports_df, bidirectional_df, undocumented_df, shadowed_df, nist_metrics, cis_metrics)
 
     web_cols = ['Name', 'Source Zone', 'Source Address', 'Destination Zone', 'Destination Address', 'Application', 'Service', 'Action', 'NIST Documented']
     web_cols = [col for col in web_cols if col in df.columns] 
@@ -159,6 +220,7 @@ def process_palo_alto_rules(df, output_path, site_name, nist_metrics=None, cis_m
         'cleartext_ports': cleartext_ports_df[web_cols].to_dict('records'),
         'bidirectional': bidirectional_df[web_cols].to_dict('records'),
         'undocumented': undocumented_df[web_cols].to_dict('records') if not undocumented_df.empty else [],
+        'shadowed': shadowed_df[web_cols].to_dict('records') if not shadowed_df.empty else [],
         'nist': nist_metrics or {},
         'cis': cis_metrics or {}
     }
@@ -190,6 +252,16 @@ def process_fortinet_rules(df, output_path, site_name):
     
     tags_none_df = pd.DataFrame(columns=df.columns)
 
+    # ---------------------------------------------------------
+    # PHASE 3: SHADOWED RULES DETECTION (Phase 3 Analytics)
+    # ---------------------------------------------------------
+    shadowed_src_df = detect_shadowed_rules(active_df, 'Source')
+    shadowed_dst_df = detect_shadowed_rules(active_df, 'Destination')
+    shadowed_combined = pd.concat([shadowed_src_df, shadowed_dst_df])
+    # Get unique rule identifier - use 'Policy' if it exists, otherwise 'Name'
+    rule_id_col = 'Policy' if 'Policy' in active_df.columns else 'Name'
+    shadowed_df = shadowed_combined.drop_duplicates(subset=[rule_id_col], keep='first') if not shadowed_combined.empty else pd.DataFrame(columns=df.columns)
+
     is_accept = active_df['Action'].astype(str).str.strip().str.upper() == 'ACCEPT'
     is_src_all = active_df['Source'].astype(str).str.strip().str.lower() == 'all'
     is_dst_all = active_df['Destination'].astype(str).str.strip().str.lower() == 'all'
@@ -213,10 +285,11 @@ def process_fortinet_rules(df, output_path, site_name):
         'source_any': len(source_any_df), 'destination_any': len(dest_any_df),
         'service_any': len(service_any_df), 'profile_issue': len(profile_none_df),
         'logs_none': len(logs_none_df), 'tags_none': 0,
+        'shadowed_rules': len(shadowed_df),
         'high_risk': int(high_mask.sum()), 'medium_risk': int(med_mask.sum()), 'low_risk': int(low_mask.sum())
     }
 
-    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df)
+    generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, shadowed_df=shadowed_df)
 
     web_df = df.copy()
     web_df['Name'] = web_df['Name'] if 'Name' in web_df.columns else web_df['Policy']
@@ -245,7 +318,8 @@ def process_fortinet_rules(df, output_path, site_name):
         'service_any': web_df.loc[service_any_df.index][web_cols].to_dict('records'),
         'profile_issue': web_df.loc[profile_none_df.index][web_cols].to_dict('records'),
         'logs_none': web_df.loc[logs_none_df.index][web_cols].to_dict('records'),
-        'tags_none': web_df.loc[tags_none_df.index][web_cols].to_dict('records')
+        'tags_none': web_df.loc[tags_none_df.index][web_cols].to_dict('records'),
+        'shadowed': web_df.loc[shadowed_df.index][web_cols].to_dict('records') if not shadowed_df.empty else []
     }
     return metrics, web_data
 
@@ -253,7 +327,7 @@ def process_fortinet_rules(df, output_path, site_name):
 # -------------------------------------------------------------------
 # SHARED EXCEL GENERATOR
 # -------------------------------------------------------------------
-def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, admin_ports_df=None, cleartext_ports_df=None, bidirectional_df=None, undocumented_df=None, nist_metrics=None, cis_metrics=None):
+def generate_excel_report(output_path, site_name, metrics, df, disabled_df, active_df, zero_hit_df, active_hit_df, source_any_df, dest_any_df, service_any_df, profile_none_df, logs_none_df, tags_none_df, admin_ports_df=None, cleartext_ports_df=None, bidirectional_df=None, undocumented_df=None, shadowed_df=None, nist_metrics=None, cis_metrics=None):
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         
         # Build Standard Dashboard Data
@@ -279,6 +353,9 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
             [metrics.get('active_hit_rules', 0), metrics.get('admin_ports', 0), metrics.get('admin_ports', 0)],
             ["Active Hit Rules", "Bi-Directional Duplicates", "To be reviewed"],
             [metrics.get('active_hit_rules', 0), metrics.get('bidirectional_rules', 0), metrics.get('bidirectional_rules', 0)],
+            
+            ["Active Rules", "Shadowed Rules (Phase 3)", "To be reviewed"],
+            [metrics.get('active_rules', 0), metrics.get('shadowed_rules', 0), metrics.get('shadowed_rules', 0)],
             
             ["Active Hit Rules", "NIST Violations (Undoc)", "To be reviewed"],
             [metrics.get('active_hit_rules', 0), metrics.get('undocumented_rules', 0), metrics.get('undocumented_rules', 0)],
@@ -325,6 +402,7 @@ def generate_excel_report(output_path, site_name, metrics, df, disabled_df, acti
         if admin_ports_df is not None: admin_ports_df.to_excel(writer, sheet_name='Admin Ports', index=False)
         if cleartext_ports_df is not None: cleartext_ports_df.to_excel(writer, sheet_name='Cleartext Protocols', index=False)
         if bidirectional_df is not None: bidirectional_df.to_excel(writer, sheet_name='Bi-Directional Duplicates', index=False)
+        if shadowed_df is not None and not shadowed_df.empty: shadowed_df.to_excel(writer, sheet_name='Shadowed Rules', index=False)
         if undocumented_df is not None: undocumented_df.to_excel(writer, sheet_name='NIST Violations', index=False)
             
         source_any_df.to_excel(writer, sheet_name='Source Any Rules', index=False)

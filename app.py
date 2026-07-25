@@ -8,11 +8,20 @@ from flask import Flask, request, render_template, send_file, redirect, url_for,
 from werkzeug.utils import secure_filename
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-app = Flask(__name__)
-app.secret_key = 'secure_key_for_flash_messages'
+import sys
 
-UPLOAD_FOLDER = 'temp_uploads'
-OUTPUT_FOLDER = 'temp_outputs'
+if getattr(sys, 'frozen', False):
+    template_folder = os.path.join(sys._MEIPASS, 'templates')
+    static_folder = os.path.join(sys._MEIPASS, 'static')
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+else:
+    app = Flask(__name__)
+
+import tempfile
+
+app.secret_key = 'secure_key_for_flash_messages'
+UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'firewall_review_uploads')
+OUTPUT_FOLDER = os.path.join(tempfile.gettempdir(), 'firewall_review_outputs')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 

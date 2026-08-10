@@ -1821,6 +1821,102 @@
    'C:\\Users\\Yash '
    'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\logging\\__init__.py',
    'PYMODULE'),
+  ('lxml',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\__init__.py',
+   'PYMODULE'),
+  ('lxml.ElementInclude',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\ElementInclude.py',
+   'PYMODULE'),
+  ('lxml.cssselect',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\cssselect.py',
+   'PYMODULE'),
+  ('lxml.doctestcompare',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\doctestcompare.py',
+   'PYMODULE'),
+  ('lxml.html',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\__init__.py',
+   'PYMODULE'),
+  ('lxml.html.ElementSoup',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\ElementSoup.py',
+   'PYMODULE'),
+  ('lxml.html._diffcommand',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\_diffcommand.py',
+   'PYMODULE'),
+  ('lxml.html._html5builder',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\_html5builder.py',
+   'PYMODULE'),
+  ('lxml.html._setmixin',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\_setmixin.py',
+   'PYMODULE'),
+  ('lxml.html.builder',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\builder.py',
+   'PYMODULE'),
+  ('lxml.html.clean',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\clean.py',
+   'PYMODULE'),
+  ('lxml.html.defs',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\defs.py',
+   'PYMODULE'),
+  ('lxml.html.formfill',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\formfill.py',
+   'PYMODULE'),
+  ('lxml.html.html5parser',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\html5parser.py',
+   'PYMODULE'),
+  ('lxml.html.soupparser',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\soupparser.py',
+   'PYMODULE'),
+  ('lxml.html.usedoctest',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\html\\usedoctest.py',
+   'PYMODULE'),
+  ('lxml.includes',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\includes\\__init__.py',
+   'PYMODULE'),
+  ('lxml.includes.extlibs',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\includes\\extlibs\\__init__.py',
+   'PYMODULE'),
+  ('lxml.includes.libexslt',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\includes\\libexslt\\__init__.py',
+   'PYMODULE'),
+  ('lxml.includes.libxml',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\includes\\libxml\\__init__.py',
+   'PYMODULE'),
+  ('lxml.includes.libxslt',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\includes\\libxslt\\__init__.py',
+   'PYMODULE'),
+  ('lxml.isoschematron',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\isoschematron\\__init__.py',
+   'PYMODULE'),
+  ('lxml.pyclasslookup',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\pyclasslookup.py',
+   'PYMODULE'),
+  ('lxml.usedoctest',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\lxml\\usedoctest.py',
+   'PYMODULE'),
   ('lzma',
    'C:\\Users\\Yash '
    'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\lzma.py',
@@ -3193,6 +3289,10 @@
    'C:\\Users\\Yash '
    'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\openpyxl\\xml\\functions.py',
    'PYMODULE'),
+  ('optparse',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\optparse.py',
+   'PYMODULE'),
   ('packaging',
    'C:\\Users\\Yash '
    'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\packaging\\__init__.py',
@@ -4404,6 +4504,22 @@
   ('proxy_tools',
    'C:\\Users\\Yash '
    'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\proxy_tools\\__init__.py',
+   'PYMODULE'),
+  ('psutil',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\psutil\\__init__.py',
+   'PYMODULE'),
+  ('psutil._common',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\psutil\\_common.py',
+   'PYMODULE'),
+  ('psutil._ntuples',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\psutil\\_ntuples.py',
+   'PYMODULE'),
+  ('psutil._pswindows',
+   'C:\\Users\\Yash '
+   'Nalawde\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\site-packages\\psutil\\_pswindows.py',
    'PYMODULE'),
   ('py_compile',
    'C:\\Users\\Yash '

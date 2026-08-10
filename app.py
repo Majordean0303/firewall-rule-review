@@ -4,7 +4,7 @@ import pandas as pd
 import threading
 import time
 import ipaddress
-from flask import Flask, request, render_template, send_file, redirect, url_for, flash
+from flask import Flask, request, render_template, send_file, redirect, url_for, flash, session, abort
 from werkzeug.utils import secure_filename
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
@@ -24,6 +24,17 @@ UPLOAD_FOLDER = os.path.join(tempfile.gettempdir(), 'firewall_review_uploads')
 OUTPUT_FOLDER = os.path.join(tempfile.gettempdir(), 'firewall_review_outputs')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+@app.before_request
+def restrict_access():
+    if request.path.startswith('/static/'):
+        return None
+    token = request.args.get('token')
+    if token and token == app.config.get('SECURE_TOKEN'):
+        session['authenticated'] = True
+    # If SECURE_TOKEN is set in config, enforce authentication
+    if app.config.get('SECURE_TOKEN') and not session.get('authenticated'):
+        abort(403, description="Access restricted to the desktop application wrapper.")
 
 @app.route('/api/system/restart', methods=['POST'])
 def system_restart():

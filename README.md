@@ -1,33 +1,3 @@
-# Firewall Rule Review — Avalonia migration
-
-The active migration uses .NET 10, a native C# analysis core and Avalonia. Import
-Palo Alto/Fortinet CSV or XLSX exports, or Palo Alto brace-format CLI text; review
-risk groups and policy evidence, inspect captured configuration benchmarks, and
-export the preserved Excel worksheets or JSON. No Python process, web server or
-browser is needed by the migrated app.
-
-```powershell
-dotnet run --project FirewallReview.Desktop
-dotnet run --project FirewallReview.Cli -- policies.csv report.xlsx "Site name"
-./scripts/test-all.ps1
-./scripts/package.ps1 -Runtime win-x64
-```
-
-**Interpretation:** risk buckets preserve the existing analysis heuristics.
-`Shadowed Rules` lists address-overlap candidates and requires a full review of
-zones, services, applications, rule order and intent. Missing CLI counters are
-unknown, not zero hits. Missing CIS context is unknown, not a passing control.
-The app does not push configuration or delete rules.
-
-The original Python files remain development parity references.
-`scripts/capture-python-baseline.py` regenerates synthetic baseline fixtures
-using development-only pandas/openpyxl. Read `MIGRATION_STATE.md` and
-`CHANGELOG.md` for validation and morning review limitations.
-
----
-
-## Previous implementation documentation
-
 # Firewall Policy Analyzer & Telemetry Dashboard 🛡️
 
 An automated Python native Windows Desktop application designed to eliminate the manual, tedious process of reviewing firewall rules in spreadsheets. 

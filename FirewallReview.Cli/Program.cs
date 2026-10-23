@@ -1,3 +1,0 @@
-using FirewallReview.Core;
-if (args.Length == 0 || args[0] is "--help" or "-h") { Console.WriteLine("Usage: FirewallReview.Cli <policy.csv|policy.xlsx|panos.txt> [report.xlsx|report.json] [site]"); return args.Length == 0 ? 2 : 0; }
-try { var input = await PolicyReader.ReadAsync(args[0]); var report = ReviewEngine.Analyze(input, args.Length > 2 ? args[2] : "Firewall review"); if (args.Length < 2) Console.WriteLine(WorkbookExport.Json(report)); else if (Path.GetExtension(args[1]).Equals(".xlsx", StringComparison.OrdinalIgnoreCase)) WorkbookExport.Write(report, args[1]); else await AtomicFile.WriteAsync(args[1], WorkbookExport.Json(report)); return 0; } catch (Exception ex) { Console.Error.WriteLine(ex.Message); return 1; }

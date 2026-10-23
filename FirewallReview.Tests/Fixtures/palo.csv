@@ -1,0 +1,9 @@
+Name,Source Zone,Source Address,Destination Zone,Destination Address,Application,Service,URL Category,Action,Profile,Options,Tags,Rule Usage Hit Count,NIST Documented
+broad,trust,192.0.2.0/24,untrust,198.51.100.1,ssl,tcp-443,business,allow,Configured,Log Forwarding Profile setting,Configured,10,Yes
+admin,trust,192.0.2.1,untrust,198.51.100.1,ssl,ssh,business,allow,Configured,Log Forwarding Profile setting,Configured,10,Yes
+cleartext,trust,192.0.2.1,untrust,198.51.100.1,ssl,http,business,allow,Configured,Log Forwarding Profile setting,Configured,10,Yes
+zero,trust,192.0.2.1,untrust,198.51.100.1,ssl,tcp-443,business,allow,Configured,Log Forwarding Profile setting,Configured,0,Yes
+reverse-unused,trust,198.51.100.1,untrust,192.0.2.1,ssl,tcp-443,business,allow,Configured,Log Forwarding Profile setting,Configured,unused,Yes
+disabled_Disabled,trust,192.0.2.1,untrust,198.51.100.1,ssl,tcp-443,business,allow,Configured,Log Forwarding Profile setting,Configured,10,Yes
+permissive,trust,any,untrust,any,any,any,any,allow,none,none,none,10,No
+unknown-object,trust,branch-object,untrust,198.51.100.1,ssl,tcp-443,business,allow,Configured,Log Forwarding Profile setting,Configured,10,Yes

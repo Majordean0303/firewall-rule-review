@@ -1,0 +1,81 @@
+{
+  "metrics": {
+    "total_rules": 6,
+    "disabled_rules": 1,
+    "active_rules": 5,
+    "zero_hit_rules": 1,
+    "active_hit_rules": 4,
+    "source_any": 2,
+    "destination_any": 2,
+    "service_any": 1,
+    "profile_issue": 1,
+    "logs_none": 1,
+    "tags_none": 0,
+    "shadowed_rules": 2,
+    "high_risk": 1,
+    "medium_risk": 2,
+    "low_risk": 2
+  },
+  "tables": {
+    "df": [
+      "low",
+      "high",
+      "stale",
+      "disabled",
+      "deny",
+      "no-log"
+    ],
+    "disabled_df": [
+      "disabled"
+    ],
+    "active_df": [
+      "low",
+      "high",
+      "stale",
+      "deny",
+      "no-log"
+    ],
+    "zero_hit_df": [
+      "stale"
+    ],
+    "active_hit_df": [
+      "low",
+      "high",
+      "deny",
+      "no-log"
+    ],
+    "source_any_df": [
+      "high",
+      "deny"
+    ],
+    "dest_any_df": [
+      "high",
+      "deny"
+    ],
+    "service_any_df": [
+      "high"
+    ],
+    "profile_none_df": [
+      "high"
+    ],
+    "logs_none_df": [
+      "no-log"
+    ],
+    "tags_none_df": [],
+    "shadowed_df": [
+      "stale",
+      "no-log"
+    ],
+    "high_risk_df": [
+      "high"
+    ],
+    "med_risk_df": [
+      "stale",
+      "no-log"
+    ],
+    "low_risk_df": [
+      "low",
+      "deny"
+    ]
+  }
+}

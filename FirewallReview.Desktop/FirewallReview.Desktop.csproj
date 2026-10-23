@@ -1,4 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-<PropertyGroup><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><Authors>Yash Nalawde</Authors><OutputType>WinExe</OutputType></PropertyGroup>
-<ItemGroup><PackageReference Include="Avalonia" Version="11.2.5" /><PackageReference Include="Avalonia.Desktop" Version="11.2.5" /><PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.5" /><PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.5" /><PackageReference Include="FluentAvaloniaUI" Version="2.1.0" /><PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" /><PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" /><ProjectReference Include="../FirewallReview.Core/FirewallReview.Core.csproj" /></ItemGroup>
-</Project>

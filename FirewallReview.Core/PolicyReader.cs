@@ -13,7 +13,15 @@ public static class PolicyReader
             throw new InvalidDataException("Policy export exceeds 128 MiB.");
         var extension = Path.GetExtension(path).ToLowerInvariant();
         if (extension is ".txt" or ".conf" or ".cfg")
-            return PanosParser.Parse(await File.ReadAllTextAsync(path, token), token);
+        {
+            var raw = await File.ReadAllTextAsync(path, token);
+            var fortios = System.Text.RegularExpressions.Regex.IsMatch(raw, @"(?m)^\s*config (firewall policy|vdom|system global)\s*$");
+            if (vendor == FirewallVendor.Fortinet || (vendor == FirewallVendor.Auto && fortios))
+                return FortiConfigParser.Parse(raw, token);
+            if (fortios)
+                throw new InvalidDataException("FortiOS configuration detected. Select Fortinet or Auto-detect.");
+            return PanosParser.Parse(raw, token);
+        }
         List<string[]> data = [];
         if (extension == ".csv")
         {
@@ -26,7 +34,7 @@ public static class PolicyReader
                 token.ThrowIfCancellationRequested();
                 var fields = parser.ReadFields();
                 if (fields is not null)
-                    data.Add(fields.Select(f=>f.Replace("\r\n","\n").Replace('\r','\n')).ToArray());
+                    data.Add(fields.Select(f => f.Replace("\r\n", "\n").Replace('\r', '\n')).ToArray());
                 if (data.Count > 100001)
                     throw new InvalidDataException("Policy export exceeds 100,000 rules.");
             }
@@ -45,7 +53,7 @@ public static class PolicyReader
             }
         }
         else
-            throw new InvalidDataException("Use a CSV, XLSX or Palo Alto CLI text export.");
+            throw new InvalidDataException("Use CSV/XLSX, Palo Alto brace-format CLI or FortiOS configuration text. See Required evidence for collection instructions.");
         if (data.Count < 2)
             throw new InvalidDataException("The export has no policy rows.");
         var headers = data[0].Select(h => h.Trim().TrimStart('\uFEFF')).ToArray();

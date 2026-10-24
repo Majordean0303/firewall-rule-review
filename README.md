@@ -82,3 +82,11 @@ When exporting your ruleset, you can export CLI text (for Palo Alto) or a `.csv`
 * `splash.png`: Loading screen image used by PyInstaller.
 See [C# logic comparison and validation](docs/logic-review.md) for the reference
 repository comparison, corrected findings and input limitations.
+
+## Compliance review and evidence collection
+
+Open **Required evidence** for vendor commands, CSV headers and downloadable
+vendor templates. The native scanner now accepts FortiOS configuration text too.
+The **Compliance** tab maps firewall findings to nine major frameworks, showing
+findings, evidence gaps, affected policies and remediation. Excel/JSON include the
+same evidence. See [scope, supported standards and collection guidance](docs/compliance-and-evidence.md).

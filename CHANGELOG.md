@@ -1,3 +1,11 @@
+## Compliance dashboard and evidence intake
+
+- Add 14 firewall checks mapped to nine cybersecurity/audit frameworks, with explicit findings, missing evidence and manual-review states.
+- Add dashboard framework/status filters, evidence details, remediation and framework sources.
+- Add an evidence collection guide and vendor CSV template export; open the app on the guide.
+- Import FortiOS configuration with VDOM isolation, unknown counters, structure validation and initial management-baseline checks.
+- Include compliance summary, evidence and collection instructions in Excel/JSON.
+
 ## C# analysis improvements
 
 - Restored the native .NET/Avalonia implementation after PR #3, as requested.

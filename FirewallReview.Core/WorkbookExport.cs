@@ -74,7 +74,7 @@ new object?[] {report.Metrics.GetValueOrDefault("active_rules",0),report.Metrics
             }
             if (report.Cis is not null)
             {
-                dashboard.Cell(++row, 1).Value = "CIS PAN-OS BENCHMARKS";
+                dashboard.Cell(++row, 1).Value = "CAPTURED CONFIGURATION CHECKS";
                 foreach (var c in report.Cis.Values)
                 {
                     dashboard.Cell(++row, 1).Value = c.Desc;
@@ -111,6 +111,46 @@ new object?[] {report.Metrics.GetValueOrDefault("active_rules",0),report.Metrics
                     sheet.RangeUsed()?.SetAutoFilter();
                 }
             }
+            var summary = workbook.AddWorksheet("Compliance Summary");
+            summary.Cell(1, 1).Value = $"Assessed {report.AssessedAtUtc:O}. " + Compliance.Scope;
+            summary.Cell(2, 1).InsertData(new[] { new[] { "Framework", "Findings", "No finding", "Needs evidence", "Manual review" } });
+            int sr = 3;
+            foreach (var item in Compliance.Summarize(report.Compliance))
+            {
+                summary.Cell(sr, 1).Value = item.Framework;
+                summary.Cell(sr, 2).Value = item.Findings;
+                summary.Cell(sr, 3).Value = item.NoFinding;
+                summary.Cell(sr, 4).Value = item.NeedsEvidence;
+                summary.Cell(sr++, 5).Value = item.ManualReview;
+            }
+            var audit = workbook.AddWorksheet("Compliance Evidence");
+            audit.Cell(1, 1).InsertData(new[] { new[] { "Framework", "Reference", "Check", "Status", "Evidence", "Recommendation", "Required evidence", "Affected rules", "Source" } });
+            int ar = 2;
+            foreach (var item in report.Compliance)
+            {
+                token.ThrowIfCancellationRequested();
+                var cells = new[] { item.Framework, item.Reference, item.Check + " — " + item.Title, item.Status, item.Evidence, item.Recommendation, item.RequiredEvidence, item.AffectedRules, item.Source };
+                for (int c = 0; c < cells.Length; c++)
+                    audit.Cell(ar, c + 1).Value = cells[c].Length > 32767 ? cells[c][..32700] + " [truncated; see JSON]" : cells[c];
+                audit.Cell(ar++, 4).Style.Fill.BackgroundColor = item.Status switch
+                {
+                    "Finding" => XLColor.LightSalmon,
+                    "No finding" => XLColor.LightGreen,
+                    "Needs evidence" => XLColor.LightYellow,
+                    _ => XLColor.LightGray
+                };
+            }
+            foreach (var sheet in new[] { summary, audit })
+            {
+                sheet.Columns().Width = 32;
+                sheet.Style.Alignment.WrapText = true;
+                sheet.SheetView.FreezeRows(sheet == summary ? 2 : 1);
+            }
+            audit.RangeUsed()?.SetAutoFilter();
+            var guide = workbook.AddWorksheet("Required Evidence");
+            guide.Cell(1, 1).Value = EvidenceGuide.Text;
+            guide.Column(1).Width = 110;
+            guide.Style.Alignment.WrapText = true;
             workbook.SaveAs(temporary);
             token.ThrowIfCancellationRequested();
             File.Move(temporary, full, true);

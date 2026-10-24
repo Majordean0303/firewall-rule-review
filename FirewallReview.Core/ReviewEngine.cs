@@ -69,14 +69,15 @@ public static class ReviewEngine
         if (active.Count + disabled.Count < rules.Count)
             notes.Add("Some policies have unrecognized status and were excluded from active-rule metrics.");
         notes.Add("Shadow checks require input in evaluation order within one rulebase. All exported selectors must be covered by one earlier terminal rule. Unresolved groups, absent optional selectors and inherited rule ordering require manual review.");
-        return new(site, input.Vendor, rules, metrics, tables, risk, notes, input.Nist, input.Cis);
+        var report = new ReviewResult(site, input.Vendor, rules, metrics, tables, risk, notes, input.Nist, input.Cis);
+        return report with { Compliance = Compliance.Evaluate(report) };
     }
     private static HashSet<string> Members(string value) => value.Trim('[', ']').Split(new[] { ',', ';', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(v => v.Trim('"', '\'')).ToHashSet(StringComparer.Ordinal);
     private static bool Covers(string prior, string current, bool address)
     {
         var first = Members(prior);
         var second = Members(current);
-        if (first.Count == 0 || second.Count == 0)
+        if (first.Count == 0 || second.Count == 0 || first.Contains("unknown") || second.Contains("unknown"))
             return false;
         if (first.Any(v => Eq(v, "any") || Eq(v, "all")))
             return true;
@@ -93,7 +94,7 @@ public static class ReviewEngine
         string[] negate = ["Negate Source", "Negate Destination", "negate-source", "negate-destination"];
         string[] terminal = ["allow", "accept", "deny", "drop", "reject", "reset-client", "reset-server", "reset-both"];
         bool Eligible(PolicyRule r) => terminal.Any(a => Eq(r.Get("Action"), a)) && !Truth(r.Get("Disabled"))
-            && !Truth(r.Get("Status")) && !negate.Any(c => r.Get(c).Length > 0 && !Eq(r.Get(c), "no") && !Eq(r.Get(c), "false"))
+            && !Truth(r.Get("Unsupported Constraints")) && !Truth(r.Get("Status")) && !negate.Any(c => r.Get(c).Length > 0 && !Eq(r.Get(c), "no") && !Eq(r.Get(c), "false"))
             && required.All(c => r.Fields.ContainsKey(c) && r.Get(c).Length > 0);
         var found = new List<PolicyRule>();
         for (int i = 0; i < rules.Count; i++)

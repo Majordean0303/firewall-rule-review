@@ -147,7 +147,7 @@ public static class PanosParser
             if (key == "mgt-config")
             {
                 var timeout = Get(Child(node, "authentication"), "idle-timeout");
-                cis["idle_timeout"] = new(int.TryParse(timeout, out var minutes) && minutes <= 10 ? "Pass" : "Fail", int.TryParse(timeout, out _) ? timeout + " mins" : timeout == "never" ? "Never" : "Not Configured", cis["idle_timeout"].Desc);
+                cis["idle_timeout"] = new(int.TryParse(timeout, out var minutes) && minutes is > 0 and <= 10 ? "Pass" : timeout.Length == 0 ? "Unknown" : "Fail", int.TryParse(timeout, out _) ? timeout + " mins" : timeout == "never" ? "Never" : "Not Configured", cis["idle_timeout"].Desc);
                 cis["login_banner"] = new(Get(node, "login-banner").Length > 0 ? "Pass" : "Fail", Get(node, "login-banner").Length > 0 ? "Configured" : "Not Configured", cis["login_banner"].Desc);
                 var pwd = Child(node, "password-complexity");
                 int.TryParse(Get(pwd, "minimum-length"), out var length);

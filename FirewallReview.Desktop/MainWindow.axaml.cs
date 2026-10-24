@@ -19,9 +19,26 @@ public partial class MainWindow : Window
     {
         try
         {
-            var path = await FileDialogs.OpenAsync(this, "Firewall policies", "*.csv", "*.xlsx", "*.txt");
+            var path = await FileDialogs.OpenAsync(this, "Firewall evidence", "*.csv", "*.xlsx", "*.txt", "*.conf", "*.cfg");
             if (path is not null)
+            {
                 await _model.LoadAsync(path);
+                if (_model.HasReport)
+                    this.FindControl<TabControl>("ReviewTabs")!.SelectedIndex = 0;
+            }
+        }
+        catch (Exception ex) { _model.Status = ex.Message; }
+    }
+    private async void SaveTemplate(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var path = await FileDialogs.SaveAsync(this, "policy-template.csv", "csv");
+            if (path is not null)
+            {
+                await _model.SaveTemplateAsync(path);
+                _model.Status = "CSV template saved. Add policy rows in evaluation order.";
+            }
         }
         catch (Exception ex) { _model.Status = ex.Message; }
     }

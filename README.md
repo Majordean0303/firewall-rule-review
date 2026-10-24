@@ -13,15 +13,16 @@ dotnet run --project FirewallReview.Cli -- policies.csv report.xlsx "Site name"
 ./scripts/package.ps1 -Runtime win-x64
 ```
 
-**Interpretation:** risk buckets preserve the existing analysis heuristics.
-`Shadowed Rules` lists address-overlap candidates and requires a full review of
+**Interpretation:** risk buckets are review heuristics with corrected permit, telemetry and shadow checks.
+`Shadowed Rules` checks coverage across exported selectors and requires review of
 zones, services, applications, rule order and intent. Missing CLI counters are
 unknown, not zero hits. Missing CIS context is unknown, not a passing control.
 The app does not push configuration or delete rules.
 
 The original Python files remain development parity references.
-`scripts/capture-python-baseline.py` regenerates synthetic baseline fixtures
-using development-only pandas/openpyxl. Read `MIGRATION_STATE.md` and
+`scripts/capture-python-baseline.py` captures legacy Python behavior using
+development-only pandas/openpyxl; it must not overwrite the reviewed native
+expectations without reconciling the differences in `docs/logic-review.md`. Read `MIGRATION_STATE.md` and
 `CHANGELOG.md` for validation and morning review limitations.
 
 ---
@@ -79,3 +80,5 @@ When exporting your ruleset, you can export CLI text (for Palo Alto) or a `.csv`
 * `cli_parser.py`: The regex parser for Palo Alto CLI outputs.
 * `build_executable.py`: A script to compile the application into a standalone `.exe`.
 * `splash.png`: Loading screen image used by PyInstaller.
+See [C# logic comparison and validation](docs/logic-review.md) for the reference
+repository comparison, corrected findings and input limitations.

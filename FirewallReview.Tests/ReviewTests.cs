@@ -10,7 +10,7 @@ public class ReviewTests
     [InlineData("palo", "csv")]
     [InlineData("forti", "csv")]
     [InlineData("panos", "txt")]
-    public async Task Native_metrics_match_captured_Python_analysis(string name, string extension)
+    public async Task Native_metrics_match_reviewed_security_expectations(string name, string extension)
     {
         var input = await PolicyReader.ReadAsync(Fixture(name + "." + extension));
         var result = ReviewEngine.Analyze(input, "Synthetic");

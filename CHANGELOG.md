@@ -1,3 +1,12 @@
+## C# analysis improvements
+
+- Restored the native .NET/Avalonia implementation after PR #3, as requested.
+- Require coverage across traffic selectors for shadow findings.
+- Review unused permit rules for exposure and profiles; exclude deny rules from those findings.
+- Correct disabled status, numeric/unknown hit counters and named log profiles.
+- Retain PAN-OS negation, schedule and user constraints; correct workbook denominators.
+- Add focused native regression tests and document reference comparisons.
+
 # Firewall Rule Review changelog
 
 ## [Unreleased]

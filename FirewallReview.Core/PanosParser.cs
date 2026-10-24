@@ -12,12 +12,12 @@ public static class PanosParser
     private static IEnumerable<(string Key, Node Value)> Walk(Node root)
     {
         foreach (var (key, value) in root)
-        if (value is Node n)
-        {
-            yield return (key, n);
-            foreach (var item in Walk(n))
-                yield return item;
-        }
+            if (value is Node n)
+            {
+                yield return (key, n);
+                foreach (var item in Walk(n))
+                    yield return item;
+            }
     }
     public static PolicyInput Parse(string raw, CancellationToken token = default)
     {
@@ -72,14 +72,14 @@ public static class PanosParser
             notes.Add("Configuration contains unclosed braces; verify the complete export.");
         var rules = new Dictionary<string, Node>();
         foreach (var (key, node) in Walk(root))
-        if (key == "security" && node.GetValueOrDefault("rules") is Node security)
-        foreach (var (name, value) in security)
-        if (value is Node data)
-        {
-            if (rules.ContainsKey(name))
-                notes.Add($"Repeated rule name '{name}' across configuration contexts; last occurrence retained.");
-            rules[name] = data;
-        }
+            if (key == "security" && node.GetValueOrDefault("rules") is Node security)
+                foreach (var (name, value) in security)
+                    if (value is Node data)
+                    {
+                        if (rules.ContainsKey(name))
+                            notes.Add($"Repeated rule name '{name}' across configuration contexts; last occurrence retained.");
+                        rules[name] = data;
+                    }
         var hits = new Dictionary<string, (string Count, string Last)>(StringComparer.OrdinalIgnoreCase);
         foreach (var line in raw.Split('\n'))
         {
@@ -101,6 +101,11 @@ public static class PanosParser
             rows.Add(new(++position, new(StringComparer.OrdinalIgnoreCase)
             {
                 ["Name"] = ruleName,
+                ["Disabled"] = Get(data, "disabled", "no"),
+                ["Negate Source"] = Get(data, "negate-source", "no"),
+                ["Negate Destination"] = Get(data, "negate-destination", "no"),
+                ["Schedule"] = Get(data, "schedule", "none"),
+                ["Source User"] = Get(data, "source-user", "any"),
                 ["Source Zone"] = Get(data, "from", "any"),
                 ["Source Address"] = Get(data, "source", "any"),
                 ["Destination Zone"] = Get(data, "to", "any"),
@@ -120,18 +125,18 @@ public static class PanosParser
         var nist = new Dictionary<string, object?> { { "sw_version", Regex.Match(raw, @"^sw-version:\s*(\S+)", RegexOptions.Multiline) is { Success: true } version ? version.Groups[1].Value : "Not Found (Please run \"show system info\")" }, { "default_deny_enforced", false } };
         var insecure = new List<string>();
         foreach (var (key, node) in Walk(root))
-        if (key == "interface-management-profile")
-        foreach (var (name, value) in node)
-        if (value is Node profile)
-        {
-            var protocols = new List<string>();
-            if (Get(profile, "telnet") == "yes")
-                protocols.Add("Telnet");
-            if (Get(profile, "http") == "yes")
-                protocols.Add("HTTP (Cleartext)");
-            if (protocols.Count > 0)
-                insecure.Add($"{name} ({string.Join(", ", protocols)})");
-        }
+            if (key == "interface-management-profile")
+                foreach (var (name, value) in node)
+                    if (value is Node profile)
+                    {
+                        var protocols = new List<string>();
+                        if (Get(profile, "telnet") == "yes")
+                            protocols.Add("Telnet");
+                        if (Get(profile, "http") == "yes")
+                            protocols.Add("HTTP (Cleartext)");
+                        if (protocols.Count > 0)
+                            insecure.Add($"{name} ({string.Join(", ", protocols)})");
+                    }
         nist["insecure_mgt_profiles"] = insecure;
         var last = rules.LastOrDefault(r => Get(r.Value, "disabled") != "yes");
         if (last.Value is not null)
@@ -152,18 +157,18 @@ public static class PanosParser
             {
                 cis["mgmt_acls"] = new("Pass", "Secured", cis["mgmt_acls"].Desc);
                 foreach (var (name, value) in node)
-                if (value is Node profile && (Get(profile, "ssh") == "yes" || Get(profile, "https") == "yes") && !profile.ContainsKey("permitted-ip"))
-                    cis["mgmt_acls"] = new("Fail", "Open Profile: " + name, cis["mgmt_acls"].Desc);
+                    if (value is Node profile && (Get(profile, "ssh") == "yes" || Get(profile, "https") == "yes") && !profile.ContainsKey("permitted-ip"))
+                        cis["mgmt_acls"] = new("Fail", "Open Profile: " + name, cis["mgmt_acls"].Desc);
             }
             if (key == "zone")
-            foreach (var (name, value) in node)
-            if (value is Node zone && new[] { "untrust", "outside", "internet", "public" }.Any(s => name.Contains(s, StringComparison.OrdinalIgnoreCase)))
-            {
-                if (cis["zone_protection"].Status == "Unknown")
-                    cis["zone_protection"] = new("Pass", "Secured", cis["zone_protection"].Desc);
-                if (!Child(zone, "network-profile").ContainsKey("zone-protection-profile"))
-                    cis["zone_protection"] = new("Fail", "Missing on " + name, cis["zone_protection"].Desc);
-            }
+                foreach (var (name, value) in node)
+                    if (value is Node zone && new[] { "untrust", "outside", "internet", "public" }.Any(s => name.Contains(s, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        if (cis["zone_protection"].Status == "Unknown")
+                            cis["zone_protection"] = new("Pass", "Secured", cis["zone_protection"].Desc);
+                        if (!Child(zone, "network-profile").ContainsKey("zone-protection-profile"))
+                            cis["zone_protection"] = new("Fail", "Missing on " + name, cis["zone_protection"].Desc);
+                    }
         }
         if (rows.Count == 0)
             throw new InvalidDataException("No Palo Alto security rules found. Supply the complete brace-format security rule export.");

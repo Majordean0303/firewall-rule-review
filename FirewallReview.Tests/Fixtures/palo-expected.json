@@ -15,7 +15,7 @@
     "cleartext_ports": 1,
     "bidirectional_rules": 2,
     "undocumented_rules": 1,
-    "shadowed_rules": 4,
+    "shadowed_rules": 2,
     "high_risk": 2,
     "medium_risk": 3,
     "low_risk": 2

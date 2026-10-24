@@ -1,0 +1,7 @@
+Name,Policy,Status,From,Source,To,Destination,Service,Action,Security Profiles,Log,Hit Count
+low,1,enabled,lan,192.0.2.1,wan,198.51.100.1,HTTPS,ACCEPT,deep-inspection,all,10
+high,2,enabled,lan,all,wan,all,ALL,ACCEPT,,all,10
+stale,3,enabled,lan,192.0.2.1,wan,198.51.100.1,HTTPS,ACCEPT,deep-inspection,all,0
+disabled,4,disabled,lan,192.0.2.1,wan,198.51.100.1,HTTPS,ACCEPT,deep-inspection,all,10
+deny,5,enabled,lan,all,wan,all,HTTPS,DENY,deep-inspection,all,10
+no-log,6,enabled,lan,192.0.2.1,wan,198.51.100.1,HTTPS,ACCEPT,deep-inspection,utm,10

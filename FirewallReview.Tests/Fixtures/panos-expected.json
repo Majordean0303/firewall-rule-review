@@ -1,0 +1,91 @@
+{
+  "rows": [
+    {
+      "Name": "web-access",
+      "Source Zone": "trust",
+      "Source Address": "192.0.2.1",
+      "Destination Zone": "untrust",
+      "Destination Address": "198.51.100.1",
+      "Application": "ssl",
+      "Service": "tcp-443",
+      "URL Category": "business",
+      "Action": "allow",
+      "Profile": "Configured",
+      "Options": "none",
+      "Tags": "none",
+      "Rule Usage Hit Count": "10",
+      "Last Hit Date": "none",
+      "NIST Documented": "Yes"
+    },
+    {
+      "Name": "default-deny",
+      "Source Zone": "any",
+      "Source Address": "any",
+      "Destination Zone": "any",
+      "Destination Address": "any",
+      "Application": "any",
+      "Service": "application-default",
+      "URL Category": "any",
+      "Action": "deny",
+      "Profile": "none",
+      "Options": "none",
+      "Tags": "none",
+      "Rule Usage Hit Count": "100",
+      "Last Hit Date": "none",
+      "NIST Documented": "No"
+    }
+  ],
+  "metrics": {
+    "total_rules": 2,
+    "disabled_rules": 0,
+    "active_rules": 2,
+    "zero_hit_rules": 0,
+    "active_hit_rules": 2,
+    "source_any": 0,
+    "destination_any": 0,
+    "service_any": 0,
+    "profile_issue": 0,
+    "logs_none": 2,
+    "tags_none": 1,
+    "admin_ports": 0,
+    "cleartext_ports": 0,
+    "bidirectional_rules": 0,
+    "undocumented_rules": 1,
+    "shadowed_rules": 0,
+    "high_risk": 0,
+    "medium_risk": 2,
+    "low_risk": 0
+  },
+  "nist": {
+    "sw_version": "11.1.4",
+    "default_deny_enforced": true,
+    "insecure_mgt_profiles": []
+  },
+  "cis": {
+    "idle_timeout": {
+      "status": "Pass",
+      "value": "5 mins",
+      "desc": "Admin Idle Timeout (\u2264 10m)"
+    },
+    "login_banner": {
+      "status": "Pass",
+      "value": "Configured",
+      "desc": "Legal Login Banner"
+    },
+    "pwd_complexity": {
+      "status": "Pass",
+      "value": "Enforced (Min 14)",
+      "desc": "Local Password Complexity"
+    },
+    "mgmt_acls": {
+      "status": "Pass",
+      "value": "Secured",
+      "desc": "Management Interface ACLs"
+    },
+    "zone_protection": {
+      "status": "Pass",
+      "value": "Secured",
+      "desc": "Untrust Zone Protection"
+    }
+  }
+}

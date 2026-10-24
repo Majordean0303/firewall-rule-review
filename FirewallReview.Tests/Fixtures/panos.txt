@@ -1,0 +1,55 @@
+sw-version: 11.1.4
+config {
+ mgt-config {
+  authentication {
+   idle-timeout 5;
+  }
+  login-banner "Authorized use only";
+  password-complexity {
+   enabled yes;
+   minimum-length 14;
+  }
+ }
+ interface-management-profile {
+  secured {
+   ssh yes;
+   permitted-ip {
+    192.0.2.1/32;
+   }
+  }
+ }
+ zone {
+  untrust {
+   network-profile {
+    zone-protection-profile protection;
+   }
+  }
+ }
+ rulebase {
+  security {
+   rules {
+    "web-access" {
+     from trust;
+     to untrust;
+     source 192.0.2.1;
+     destination 198.51.100.1;
+     application ssl;
+     service tcp-443;
+     category business;
+     action allow;
+     description "Approved business access";
+     profile-setting {
+      group security;
+     }
+    }
+    "default-deny" {
+     source any;
+     destination any;
+     action deny;
+    }
+   }
+  }
+ }
+}
+web-access vsys1 10 - - -
+default-deny vsys1 100 - - -

@@ -6,3 +6,12 @@ features.txt
 linkedin/
 testing_subjects/
 .vscode/
+# .NET migration artifacts
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+*.user
+
+__pycache__/
+*.pyc
